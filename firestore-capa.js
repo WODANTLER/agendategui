@@ -21,7 +21,7 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged,
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc,
@@ -143,6 +143,7 @@ window.DB = {
   listo,
   estado,
   entrar,
+  salir: () => signOut(auth),
   onCambio: (fn) => { oyentes.push(fn); },
 
   guardarEvento: (o) => guardar('eventos', o, true),

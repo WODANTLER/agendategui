@@ -325,6 +325,24 @@ button svg,.picker svg,.tabbar svg{flex:none}
   border:1px solid rgba(201,169,106,.55);color:var(--oro);font-size:13px;line-height:17px;
   text-align:center;font-weight:400}
 .box.add:active .plus{background:var(--oro);color:var(--paper);border-color:var(--oro)}
+/* ── pantalla de acceso ── */
+#login{position:absolute;inset:0;z-index:200;background:var(--paper);display:none;
+  flex-direction:column;align-items:center;justify-content:center;padding:32px 26px}
+#login.on{display:flex}
+.lg-mark{width:58px;height:58px;border:2px solid var(--oro);border-radius:10px;position:relative;
+  display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.lg-mark::before{content:'';position:absolute;top:-2px;left:-2px;right:-2px;height:9px;
+  background:var(--oro);border-radius:8px 8px 0 0}
+.lg-mark i{width:19px;height:19px;border-radius:50%;background:var(--oro);display:block;margin-top:6px}
+.lg-t{font-size:26px;font-weight:600;letter-spacing:-.035em}
+.lg-s{font-size:13px;color:var(--ink-3);margin-top:5px;text-align:center}
+.lg-form{width:100%;max-width:300px;margin-top:26px}
+.lg-form input{height:46px;padding:0 13px;font-size:15px;margin-top:9px;border-radius:8px}
+.lg-btn{width:100%;height:46px;margin-top:14px;border-radius:8px;background:var(--oro);
+  color:#141513;font-size:14px;font-weight:600;letter-spacing:-.01em}
+.lg-btn:active{opacity:.85}
+.lg-btn:disabled{opacity:.5}
+.lg-err{font-size:12px;color:#C4655A;margin-top:11px;text-align:center;min-height:16px;line-height:1.4}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -355,6 +373,19 @@ button svg,.picker svg,.tabbar svg{flex:none}
     <button data-tab="cli"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c.9-3.7 3.9-5.6 7.5-5.6s6.6 1.9 7.5 5.6"/></svg>Clientes</button>
     <button data-tab="fin"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M10 19V5M16 19v-6M22 19H2"/></svg>Finanzas</button>
   </nav>
+
+  <div id="login" class="on">
+    <div class="lg-mark"><i></i></div>
+    <div class="lg-t">Agenda</div>
+    <div class="lg-s" id="lgSub">Conectando…</div>
+    <div class="lg-form" id="lgForm" hidden>
+      <input id="lgMail" type="email" inputmode="email" autocomplete="username"
+             autocapitalize="none" spellcheck="false" placeholder="Tu mail">
+      <input id="lgPass" type="password" autocomplete="current-password" placeholder="Contraseña">
+      <button class="lg-btn" id="lgBtn">Entrar</button>
+      <div class="lg-err" id="lgErr"></div>
+    </div>
+  </div>
 
   <div id="scrim"></div>
   <div id="sheet">
@@ -913,6 +944,7 @@ function renderFin(){
         ${[7,15,20].map(v=>`<option value="${v}"${Math.round(IRPF_P*100)===v?' selected':''}>${v} %</option>`).join('')}
       </select>
     </div>
+    <button class="verhist" id="salir" style="margin-top:14px">Cerrar sesión</button>
   </div>`;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
@@ -921,6 +953,7 @@ function renderFin(){
   addIngreso.onclick=()=>{editando=null;abrirEvento(null,'trabajo')};
   addGasto.onclick=()=>{editando=null;editarGasto(null,true)};
   cfgRet.onchange=()=>{IRPF_P=+cfgRet.value/100;renderFin()};
+  salir.onclick=()=>{if(confirm('¿Cerrar sesión?'))DB.salir()};
   fin.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{filtroG=b.dataset.fg;vistaGastos()});
 }
 function moverP(d){
@@ -1206,12 +1239,39 @@ vd.addEventListener('touchend',e=>{
   });
 })();
 
+/* ── acceso: la app no se usa sin sesión ── */
 document.addEventListener('db-sin-sesion',()=>{
-  const mail=prompt('Mail:');
-  if(!mail)return;
-  const pass=prompt('Contraseña:');
-  DB.entrar(mail,pass).catch(()=>alert('No pudo entrar. Revisá mail y contraseña.'));
+  login.classList.add('on');
+  lgForm.hidden=false;
+  lgSub.textContent='Entrá con tu cuenta';
+  lgBtn.disabled=false;lgBtn.textContent='Entrar';
 });
+document.addEventListener('db-con-sesion',()=>{
+  login.classList.remove('on');
+  lgErr.textContent='';lgPass.value='';
+});
+
+async function entrar(){
+  const mail=lgMail.value.trim(), pass=lgPass.value;
+  if(!mail||!pass){lgErr.textContent='Completá los dos campos.';return}
+  lgErr.textContent='';lgBtn.disabled=true;lgBtn.textContent='Entrando…';
+  try{
+    await DB.entrar(mail,pass);
+  }catch(err){
+    const m={
+      'auth/invalid-email':'Ese mail no tiene formato válido.',
+      'auth/invalid-credential':'Mail o contraseña incorrectos.',
+      'auth/wrong-password':'Mail o contraseña incorrectos.',
+      'auth/user-not-found':'Ese mail no está dado de alta.',
+      'auth/too-many-requests':'Demasiados intentos. Esperá unos minutos.',
+      'auth/network-request-failed':'Sin conexión. Revisá la red.',
+    }[err.code] || 'No se pudo entrar.';
+    lgErr.textContent=m;
+    lgBtn.disabled=false;lgBtn.textContent='Entrar';
+  }
+}
+lgBtn.onclick=entrar;
+[lgMail,lgPass].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')entrar()}));
 
 document.addEventListener('db-error',(e)=>{ alert(e.detail); });
 
