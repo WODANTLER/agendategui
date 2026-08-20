@@ -24,7 +24,7 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc,
+  initializeFirestore, collection, doc, onSnapshot, setDoc, deleteDoc,
   serverTimestamp, enableIndexedDbPersistence,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
@@ -40,7 +40,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+/* ignoreUndefinedProperties: Firestore rechaza cualquier campo con
+   undefined y devuelve 'invalid-argument' sin decir cuál es. Con esto
+   los ignora en vez de romper. */
+const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
 
 /* Cache offline: si se queda sin señal en un rodaje, sigue andando
    y sincroniza cuando vuelve. Falla silencioso si hay dos pestañas. */
@@ -90,9 +93,28 @@ function nuevoId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+/* Deja el objeto en algo que Firestore acepte: sin undefined, sin
+   funciones, sin NaN. Los anidados también. */
+function limpiar(v) {
+  if (v === undefined || typeof v === 'function') return null;
+  if (v === null) return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (Array.isArray(v)) return v.map(limpiar);
+  if (v instanceof Date) return v;
+  if (typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v)) {
+      if (v[k] === undefined) continue;      // el campo directamente no va
+      o[k] = limpiar(v[k]);
+    }
+    return o;
+  }
+  return v;
+}
+
 async function guardar(coleccion, obj, marcarSync) {
   const id = obj.id ? String(obj.id) : nuevoId();
-  const datos = { ...obj, id, actualizado: serverTimestamp() };
+  const datos = { ...limpiar(obj), id, actualizado: serverTimestamp() };
   // syncPend le avisa al Apps Script que este trabajo cambió
   if (marcarSync) {
     datos.syncPend = true;
@@ -104,10 +126,13 @@ async function guardar(coleccion, obj, marcarSync) {
     // Con cache offline setDoc resuelve igual aunque no haya red,
     // así que un error acá es real: reglas o sesión, no conexión.
     console.error('No se pudo guardar en ' + coleccion + ':', err);
-    document.dispatchEvent(new CustomEvent('db-error', {
-      detail: 'No se pudo guardar. ' +
-        (err.code === 'permission-denied' ? 'Sin permiso.' : err.code),
-    }));
+    console.error('Datos que se intentaron guardar:', JSON.parse(JSON.stringify(datos, (k, x) => x === undefined ? '__undefined__' : x)));
+    const msg = {
+      'permission-denied': 'Sin permiso. Revisá que estés con la cuenta correcta.',
+      'invalid-argument': 'Hay un campo con un valor que Firestore no acepta. Mirá la consola.',
+      'unavailable': 'Sin conexión con la base.',
+    }[err.code] || ('No se pudo guardar (' + err.code + ').');
+    document.dispatchEvent(new CustomEvent('db-error', { detail: msg }));
     throw err;
   }
   return id;
