@@ -1069,11 +1069,11 @@ function pintarEvento(){
   <div class="chk"><button id="tDia" class="${e.todoDia?'on':''}"><span class="bx">✓</span>Todo el día</button></div>
   ${e.todoDia
     ? `<div class="f"><label>Fecha</label><input type="date" id="fecha" value="${e.fecha}">
-       <input type="hidden" id="ini" value="${e.ini||'09:00'}"><input type="hidden" id="fin" value="${e.fin||'10:00'}"></div>`
+       <input type="hidden" id="evIni" value="${e.ini||'09:00'}"><input type="hidden" id="evFin" value="${e.fin||'10:00'}"></div>`
     : `<div class="f f3">
         <div><label>Fecha</label><input type="date" id="fecha" value="${e.fecha}"></div>
-        <div><label>Desde</label><button class="campo" data-h="ini">${e.ini}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="ini" value="${e.ini}"></div>
-        <div><label>Hasta</label><button class="campo" data-h="fin">${e.fin}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="fin" value="${e.fin}"></div></div>`}
+        <div><label>Desde</label><button class="campo" data-h="ini">${e.ini}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="evIni" value="${e.ini}"></div>
+        <div><label>Hasta</label><button class="campo" data-h="fin">${e.fin}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="evFin" value="${e.fin}"></div></div>`}
   <div class="f"><label>Dónde</label><input id="lugar" value="${(e.lugar||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
   <div class="aviso">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2 7.5-2 7.5h16s-2-1.5-2-7.5z"/><path d="M10.3 19.5a2 2 0 0 0 3.4 0"/></svg>
@@ -1112,8 +1112,9 @@ function leerEv(){
   const q=i=>document.getElementById(i);if(!q('titulo'))return;
   editando.titulo=q('titulo').value;
   editando.fecha=q('fecha').value;
-  if(q('ini'))editando.ini=q('ini').value;
-  if(q('fin'))editando.fin=q('fin').value;
+  // ojo: 'fin' a secas choca con el contenedor de Finanzas
+  if(q('evIni'))editando.ini=q('evIni').value;
+  if(q('evFin'))editando.fin=q('evFin').value;
   editando.lugar=q('lugar').value;
   if(q('aviso'))editando.aviso=+q('aviso').value||30;
   if(editando.tipo!=='nota'){
@@ -1162,6 +1163,9 @@ shSave.onclick=async ()=>{
     if(modoEd==='ev'){
       leerEv();if(!guardando.titulo.trim())guardando.titulo='Sin título';
       guardando.importe=+guardando.importe||0;
+      // por las dudas: un evento sin horas rompe la vista de día
+      if(typeof guardando.ini!=='string'||guardando.ini.indexOf(':')<0)guardando.ini='10:00';
+      if(typeof guardando.fin!=='string'||guardando.fin.indexOf(':')<0)guardando.fin='11:00';
       // cliente nuevo escrito a mano: se crea solo
       if(guardando.cliente&&!cliDe(guardando.cliente))
         await DB.guardarCliente({nombre:guardando.cliente,tipo:'empresa',nif:'',tel:'',email:'',notas:''});
