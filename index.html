@@ -409,7 +409,9 @@ button svg,.picker svg,.tabbar svg{flex:none}
 
 <script>
 /* ═══ Demo · agenda + finanzas · Joaco Anzoátegui ═══ */
-const HOY=new Date(2026,7,20), IVA_P=.21;
+function hoyCero(){const d=new Date();d.setHours(0,0,0,0);return d}
+let HOY=hoyCero();          // se actualiza solo al cruzar la medianoche
+const IVA_P=.21;
 // Retención de IRPF en factura. Se cambia desde Finanzas → Ajustes.
 // Tipo general.
 let IRPF_P=.15;
@@ -546,7 +548,11 @@ function renderDia(){
       </button>`).join('')}</div>`
     : '';
 
-  const ahora=(k===iso(HOY))?`<div class="now" style="top:${((11*60+40)/60-H0)*HH}px"></div>`:'';
+  let ahora='';
+  if(k===iso(HOY)){
+    const n=new Date(), t=n.getHours()+n.getMinutes()/60;
+    if(t>=H0&&t<=H1)ahora=`<div class="now" style="top:${(t-H0)*HH}px"></div>`;
+  }
 
   grid.innerHTML =
     (todos.length?'':`<div class="vacio">Nada anotado. Tocá + para cargar algo.</div>`) +
@@ -969,6 +975,7 @@ function renderFin(){
       </select>
     </div>
     <button class="verhist" id="salir" style="margin-top:14px">Cerrar sesión</button>
+    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:14px">v8 · 21 ago</div>
   </div>`;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
@@ -1372,6 +1379,14 @@ function render(){
   if(tab==='fin')renderFin();
 }
 render();
+
+/* cada minuto: mueve la línea de la hora actual y, si cruzó la
+   medianoche, cambia el día marcado como hoy */
+setInterval(()=>{
+  const h=hoyCero();
+  if(iso(h)!==iso(HOY)){HOY=h;render();return}
+  if(tab==='cal'&&vistaCal==='dia')renderDia();
+},60000);
 </script>
 </body>
 </html>
