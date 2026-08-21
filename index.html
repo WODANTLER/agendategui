@@ -7,10 +7,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Agenda">
+<meta name="apple-mobile-web-app-title" content="Personal Calendar">
 <link rel="manifest" id="mfLink">
 <link rel="apple-touch-icon" id="icoLink">
-<title>Agenda — Joaco Anzoátegui</title>
+<title>Personal Calendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -76,7 +76,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .ev .cash{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--p-efec);margin-left:4px;vertical-align:1px}
 .now{position:absolute;left:44px;right:14px;height:1px;background:var(--c-entre);z-index:5}
 .now::before{content:'';position:absolute;left:-4px;top:-3px;width:7px;height:7px;border-radius:50%;background:var(--c-entre)}
-.vacio{position:absolute;left:52px;right:14px;top:92px;text-align:center;font-size:13px;color:var(--ink-3)}
+
 
 #mesgrid{padding:2px 12px 120px}
 .mdow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px}
@@ -225,11 +225,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .ev.nota{background:repeating-linear-gradient(135deg,var(--surface),var(--surface) 6px,#24261F 6px,#24261F 12px);
   border-style:dashed}
 .ev.nota .t{font-weight:500;color:var(--ink-2)}
-.todod{display:flex;flex-direction:column;gap:4px;padding:0 14px 8px}
-.todod button{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px dashed var(--hair);
-  border-radius:6px;padding:8px 10px;width:100%;text-align:left;font-size:12.5px;color:var(--ink-2)}
-.todod button:active{background:var(--wash)}
-.todod .dd{width:7px;height:7px;border-radius:50%;background:#9A9A93;flex:none}
 .tiposeg{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:2px}
 .tiposeg button{border:1px solid var(--hair);background:var(--surface);border-radius:8px;padding:11px 4px;
   font-size:12.5px;color:var(--ink-2)}
@@ -343,6 +338,16 @@ button svg,.picker svg,.tabbar svg{flex:none}
 .lg-btn:active{opacity:.85}
 .lg-btn:disabled{opacity:.5}
 .lg-err{font-size:12px;color:#C4655A;margin-top:11px;text-align:center;min-height:16px;line-height:1.4}
+.horas{position:relative}
+.vacio{padding:26px 0 4px;text-align:center;font-size:13px;color:var(--ink-3)}
+.todod{display:flex;flex-direction:column;gap:5px;padding:10px 0 12px}
+.todod button{display:flex;align-items:center;gap:9px;background:var(--surface);
+  border:1px dashed var(--hair);border-radius:7px;padding:9px 11px;width:100%;text-align:left;
+  font-size:12.5px;color:var(--ink-2)}
+.todod button:active{background:var(--wash)}
+.todod .dd{width:7px;height:7px;border-radius:50%;flex:none}
+.todod .tt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.todod .mm{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);flex:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -376,7 +381,7 @@ button svg,.picker svg,.tabbar svg{flex:none}
 
   <div id="login" class="on">
     <div class="lg-mark"><i></i></div>
-    <div class="lg-t">Agenda</div>
+    <div class="lg-t">Personal Calendar</div>
     <div class="lg-s" id="lgSub">Conectando…</div>
     <div class="lg-form" id="lgForm" hidden>
       <input id="lgMail" type="email" inputmode="email" autocomplete="username"
@@ -443,7 +448,11 @@ const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const fromIso=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
 const lun=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
-const min=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+const min=t=>{if(typeof t!=='string'||t.indexOf(':')<0)return 0;
+  const[h,m]=t.split(':').map(Number);
+  return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+const sinHora=e=>!!e.todoDia||typeof e.ini!=='string'||typeof e.fin!=='string'
+  ||e.ini.indexOf(':')<0||e.fin.indexOf(':')<0;
 const eur=n=>Math.round(n).toLocaleString('es-ES')+' €';
 const eur2=n=>n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 const gTot=e=>(e.gastos||[]).reduce((s,g)=>s+(+g.m||0),0);
@@ -512,23 +521,38 @@ const H0=6,H1=24,HH=58;
 function renderDia(){
   const k=iso(sel);
   const todos=eventos.filter(e=>e.fecha===k);
-  const alldia=todos.filter(e=>esNota(e)&&e.todoDia);
-  const evs=todos.filter(e=>!(esNota(e)&&e.todoDia)).sort((a,b)=>min(a.ini)-min(b.ini));
+  // sin hora = va a la banda de arriba, no a la grilla
+  const alldia=todos.filter(sinHora);
+  const evs=todos.filter(e=>!sinHora(e)).sort((a,b)=>min(a.ini)-min(b.ini));
+
   let html='';for(let h=H0;h<H1;h++)html+=`<div class="hr"><span>${String(h).padStart(2,'0')}</span></div>`;
+
   const cols=[];evs.forEach(e=>{let c=0;while(cols[c]&&cols[c]>min(e.ini))c++;cols[c]=min(e.fin);e._c=c});
   const nc=Math.max(1,cols.length);let lanes='';
   evs.forEach(e=>{
     const nota=esNota(e);
-    const col=nota?COL_NOTA:ESTADOS[e.estado].hex;
+    const col=colorDe(e);
     const top=(min(e.ini)/60-H0)*HH,hgt=Math.max(38,(min(e.fin)-min(e.ini))/60*HH-3),w=100/nc;
     lanes+=`<div class="ev${nota?' nota':''}" data-id="${e.id}" style="--ec:${col};top:${top}px;height:${hgt}px;left:${e._c*w}%;width:calc(${w}% - 4px);${nota?'':`background:color-mix(in srgb,${col} 17%,var(--surface))`}">
       <div class="t">${e.titulo}</div><div class="c">${nota?(e.lugar||'nota'):e.cliente+(e.lugar?' · '+e.lugar:'')}</div>
       <div class="m">${e.ini}–${e.fin}${!nota&&e.importe?' · '+eur(e.importe):''}${e.cobro==='efectivo'?'<i class="cash"></i>':''}</div></div>`;
   });
-  const banda=alldia.length?`<div class="todod">${alldia.map(e=>`<button data-id="${e.id}"><span class="dd"></span>${e.titulo}</button>`).join('')}</div>`:'';
-  grid.innerHTML=banda+html+`<div class="lanes">${lanes}</div>`+
-    (k===iso(HOY)?`<div class="now" style="top:${((11*60+40)/60-H0)*HH}px"></div>`:'')+
-    (evs.length?'':`<div class="vacio">Día libre. Tocá + para cargar un trabajo.</div>`);
+
+  const banda=alldia.length
+    ? `<div class="todod">${alldia.map(e=>`<button data-id="${e.id}">
+        <span class="dd" style="background:${colorDe(e)}"></span>
+        <span class="tt">${e.titulo}</span>
+        ${!esNota(e)&&e.importe?`<span class="mm">${eur(e.importe)}</span>`:''}
+      </button>`).join('')}</div>`
+    : '';
+
+  const ahora=(k===iso(HOY))?`<div class="now" style="top:${((11*60+40)/60-H0)*HH}px"></div>`:'';
+
+  grid.innerHTML =
+    (todos.length?'':`<div class="vacio">Nada anotado. Tocá + para cargar algo.</div>`) +
+    banda +
+    `<div class="horas">${html}<div class="lanes">${lanes}</div>${ahora}</div>`;
+
   if(!renderDia._o){renderDia._o=1;requestAnimationFrame(()=>{document.getElementById('v-dia').scrollTop=(8-H0)*HH})}
 }
 function renderMes(){
@@ -536,7 +560,7 @@ function renderMes(){
   for(let i=0;i<42;i++){
     const d=new Date(first);d.setDate(first.getDate()+i);const k=iso(d),off=d.getMonth()!==m;
     const evs=eventos.filter(e=>e.fecha===k)
-      .sort((a,b)=>(b.todoDia?1:0)-(a.todoDia?1:0)||min(a.ini)-min(b.ini));
+      .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
     const tot=evs.reduce((s,e)=>s+(esNota(e)?0:+e.importe||0),0);
     const chips=evs.slice(0,3).map(e=>
       `<span class="chip" style="background:${colorDe(e)}">${e.titulo}</span>`).join('');
@@ -552,7 +576,7 @@ function renderMes(){
   if(diaAbierto===iso(sel)){
     const k=iso(sel);
     const evs=eventos.filter(e=>e.fecha===k)
-      .sort((a,b)=>(b.todoDia?1:0)-(a.todoDia?1:0)||min(a.ini)-min(b.ini));
+      .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
     const tot=evs.reduce((s,e)=>s+(esNota(e)?0:+e.importe||0),0);
     const nTrab=evs.filter(e=>!esNota(e)).length;
     const dia=sel.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
@@ -566,7 +590,7 @@ function renderMes(){
       <div class="pv-h"><span class="t">${dia}</span><span class="s">${resumen}</span></div>
       ${evs.length?`<div class="rows">${evs.map(e=>`<button class="pv-row" data-evid="${e.id}">
         <span class="dot" style="background:${colorDe(e)}"></span>
-        <span class="h">${e.todoDia?'—':e.ini}</span>
+        <span class="h">${sinHora(e)?'—':e.ini}</span>
         <span class="nm"><b>${e.titulo}</b><small>${esNota(e)?(e.lugar||'nota'):(e.cliente||'')+(e.lugar?' · '+e.lugar:'')}</small></span>
         <span class="am">${!esNota(e)&&e.importe?eur(e.importe):''}</span></button>`).join('')}</div>`:''}
     </div>`;
@@ -1210,18 +1234,32 @@ vd.addEventListener('touchend',e=>{
     const c=document.createElement('canvas');c.width=c.height=px;const x=c.getContext('2d');
     x.fillStyle='#141513';x.fillRect(0,0,px,px);
     const u=px/180;
-    // marco de visor + retícula
-    x.strokeStyle='#C9A96A';x.lineWidth=5*u;x.strokeRect(38*u,46*u,104*u,88*u);
-    x.fillStyle='#C9A96A';x.fillRect(38*u,46*u,104*u,10*u);
-    x.strokeStyle='rgba(201,169,106,.35)';x.lineWidth=2*u;
-    x.beginPath();x.moveTo(90*u,60*u);x.lineTo(90*u,120*u);
-    x.moveTo(52*u,90*u);x.lineTo(128*u,90*u);x.stroke();
-    x.fillStyle='#C9A96A';x.beginPath();x.arc(90*u,90*u,15*u,0,7);x.fill();
+    const w=108*u, h=104*u, x0=(px-w)/2, y0=(px-h)/2+5*u, r=10*u, lw=5.4*u;
+    const banda=29*u;
+    // anillas
+    x.fillStyle='#C9A96A';
+    [0.30,0.70].forEach(fx=>{
+      const cx=x0+w*fx, aw=5.4*u, ah=13*u;
+      x.beginPath();x.roundRect(cx-aw/2,y0-ah*0.62,aw,ah,aw/2);x.fill();
+    });
+    // cuerpo
+    x.strokeStyle='#C9A96A';x.lineWidth=lw;x.lineJoin='round';
+    x.beginPath();x.roundRect(x0,y0,w,h,r);x.stroke();
+    // cabecera maciza
+    x.save();
+    x.beginPath();x.roundRect(x0-lw/2,y0-lw/2,w+lw,h+lw,r+lw/2);x.clip();
+    x.fillStyle='#C9A96A';x.fillRect(x0-lw,y0-lw,w+lw*2,banda+lw);
+    x.restore();
+    // el número del día
+    x.fillStyle='#C9A96A';
+    x.font='700 '+(46*u)+'px -apple-system,"Helvetica Neue",Arial,sans-serif';
+    x.textAlign='center';x.textBaseline='middle';
+    x.fillText('31', x0+w/2, y0+banda+(h-banda)/2+1*u);
     return c.toDataURL('image/png');
   }
   const i180=icono(180), i512=icono(512);
   document.getElementById('icoLink').href=i180;
-  const mf={name:'Agenda — Joaco',short_name:'Agenda',start_url:'.',display:'standalone',
+  const mf={name:'Personal Calendar',short_name:'Personal Calendar',start_url:'.',display:'standalone',
     background_color:'#141513',theme_color:'#141513',orientation:'portrait',
     icons:[{src:i180,sizes:'180x180',type:'image/png'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
   document.getElementById('mfLink').href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));
