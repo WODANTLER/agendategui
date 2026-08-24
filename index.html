@@ -348,6 +348,10 @@ button svg,.picker svg,.tabbar svg{flex:none}
 .todod .dd{width:7px;height:7px;border-radius:50%;flex:none}
 .todod .tt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .todod .mm{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);flex:none}
+.fechahora{display:grid;grid-template-columns:1.35fr 1fr;gap:9px}
+.fechahora.solo{grid-template-columns:1fr}
+.chip.multi{border-left:3px solid rgba(0,0,0,.3)}
+.todod .rango{font-family:var(--mono);font-size:10px;color:var(--ink-3);flex:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -453,6 +457,10 @@ const lun=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));retu
 const min=t=>{if(typeof t!=='string'||t.indexOf(':')<0)return 0;
   const[h,m]=t.split(':').map(Number);
   return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+const finDe=e=>e.fechaFin&&e.fechaFin>e.fecha?e.fechaFin:e.fecha;
+const enDia=(e,k)=>k>=e.fecha&&k<=finDe(e);
+const dias=e=>Math.round((fromIso(finDe(e))-fromIso(e.fecha))/86400000)+1;
+const varios=e=>dias(e)>1;
 const sinHora=e=>!!e.todoDia||typeof e.ini!=='string'||typeof e.fin!=='string'
   ||e.ini.indexOf(':')<0||e.fin.indexOf(':')<0;
 const eur=n=>Math.round(n).toLocaleString('es-ES')+' €';
@@ -512,7 +520,7 @@ function renderStrip(){
   const l=lun(sel);let out='';
   for(let i=0;i<7;i++){
     const d=new Date(l);d.setDate(l.getDate()+i);const k=iso(d);
-    const evs=eventos.filter(e=>e.fecha===k).slice(0,4);
+    const evs=eventos.filter(e=>enDia(e,k)).slice(0,4);
     out+=`<button class="d ${k===iso(sel)?'sel':''} ${k===iso(HOY)?'hoy':''}" data-f="${k}">
       <span class="dow">${DOW[i]}</span><span class="num">${d.getDate()}</span>
       <span class="dots">${evs.map(e=>`<i style="background:${colorDe(e)}"></i>`).join('')}</span></button>`;
@@ -522,10 +530,10 @@ function renderStrip(){
 const H0=6,H1=24,HH=58;
 function renderDia(){
   const k=iso(sel);
-  const todos=eventos.filter(e=>e.fecha===k);
+  const todos=eventos.filter(e=>enDia(e,k));
   // sin hora = va a la banda de arriba, no a la grilla
-  const alldia=todos.filter(sinHora);
-  const evs=todos.filter(e=>!sinHora(e)).sort((a,b)=>min(a.ini)-min(b.ini));
+  const alldia=todos.filter(e=>sinHora(e)||varios(e));
+  const evs=todos.filter(e=>!sinHora(e)&&!varios(e)).sort((a,b)=>min(a.ini)-min(b.ini));
 
   let html='';for(let h=H0;h<H1;h++)html+=`<div class="hr"><span>${String(h).padStart(2,'0')}</span></div>`;
 
@@ -544,6 +552,7 @@ function renderDia(){
     ? `<div class="todod">${alldia.map(e=>`<button data-id="${e.id}">
         <span class="dd" style="background:${colorDe(e)}"></span>
         <span class="tt">${e.titulo}</span>
+        ${varios(e)?`<span class="rango">día ${Math.round((fromIso(k)-fromIso(e.fecha))/86400000)+1}/${dias(e)}</span>`:''}
         ${!esNota(e)&&e.importe?`<span class="mm">${eur(e.importe)}</span>`:''}
       </button>`).join('')}</div>`
     : '';
@@ -565,9 +574,9 @@ function renderMes(){
   const y=sel.getFullYear(),m=sel.getMonth(),first=lun(new Date(y,m,1));let cells='';
   for(let i=0;i<42;i++){
     const d=new Date(first);d.setDate(first.getDate()+i);const k=iso(d),off=d.getMonth()!==m;
-    const evs=eventos.filter(e=>e.fecha===k)
+    const evs=eventos.filter(e=>enDia(e,k))
       .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
-    const tot=evs.reduce((s,e)=>s+(esNota(e)?0:+e.importe||0),0);
+    const tot=evs.reduce((s,e)=>s+((esNota(e)||e.fecha!==k)?0:+e.importe||0),0);
     const chips=evs.slice(0,3).map(e=>
       `<span class="chip" style="background:${colorDe(e)}">${e.titulo}</span>`).join('');
     const mas=evs.length>3?`<span class="mas">+${evs.length-3}</span>`:'';
@@ -581,9 +590,9 @@ function renderMes(){
   let preview='';
   if(diaAbierto===iso(sel)){
     const k=iso(sel);
-    const evs=eventos.filter(e=>e.fecha===k)
+    const evs=eventos.filter(e=>enDia(e,k))
       .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
-    const tot=evs.reduce((s,e)=>s+(esNota(e)?0:+e.importe||0),0);
+    const tot=evs.reduce((s,e)=>s+((esNota(e)||e.fecha!==k)?0:+e.importe||0),0);
     const nTrab=evs.filter(e=>!esNota(e)).length;
     const dia=sel.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
     const resumen=evs.length
@@ -975,7 +984,7 @@ function renderFin(){
       </select>
     </div>
     <button class="verhist" id="salir" style="margin-top:14px">Cerrar sesión</button>
-    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:14px">v8 · 21 ago</div>
+    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:14px">v9 · 24 ago</div>
   </div>`;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
@@ -1026,8 +1035,9 @@ function elegirTipo(){
 function abrirEvento(ev,tipo){
   modoEd='ev';volverA=null;shSave.style.visibility='visible';
   editando=ev?JSON.parse(JSON.stringify(ev)):{id:null,tipo:'trabajo',todoDia:0,titulo:'',cliente:'',rubro:'Automoción',
-    fecha:iso(sel),ini:'10:00',fin:'13:00',aviso:30,importe:'',cobro:'',factura:1,estado:'presupuestado',lugar:'',gastos:[]};
+    fecha:iso(sel),fechaFin:iso(sel),ini:'10:00',fin:'13:00',aviso:30,importe:'',cobro:'',factura:1,estado:'presupuestado',lugar:'',gastos:[]};
   if(!editando.aviso)editando.aviso=30;
+  if(!editando.fechaFin)editando.fechaFin=editando.fecha;
   if(tipo)editando.tipo=tipo;
   if(!editando.tipo)editando.tipo='trabajo';
   if(editando.tipo==='nota'&&!editando.id){
@@ -1074,13 +1084,21 @@ function pintarEvento(){
   shBody.innerHTML=`
   <input id="titulo" placeholder="${esNota?'¿Qué anotás?':'¿Qué trabajo es?'}" value="${e.titulo.replace(/"/g,'&quot;')}">
   <div class="chk"><button id="tDia" class="${e.todoDia?'on':''}"><span class="bx">✓</span>Todo el día</button></div>
-  ${e.todoDia
-    ? `<div class="f"><label>Fecha</label><input type="date" id="fecha" value="${e.fecha}">
-       <input type="hidden" id="evIni" value="${e.ini||'09:00'}"><input type="hidden" id="evFin" value="${e.fin||'10:00'}"></div>`
-    : `<div class="f f3">
-        <div><label>Fecha</label><input type="date" id="fecha" value="${e.fecha}"></div>
-        <div><label>Desde</label><button class="campo" data-h="ini">${e.ini}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="evIni" value="${e.ini}"></div>
-        <div><label>Hasta</label><button class="campo" data-h="fin">${e.fin}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="evFin" value="${e.fin}"></div></div>`}
+  <div class="f"><label>Desde</label>
+    <div class="fechahora${e.todoDia?' solo':''}">
+      <input type="date" id="fecha" value="${e.fecha}">
+      ${e.todoDia?`<input type="hidden" id="evIni" value="${e.ini||'09:00'}">`
+        :`<button class="campo" data-h="ini">${e.ini}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="evIni" value="${e.ini}">`}
+    </div>
+  </div>
+  <div class="f"><label>Hasta</label>
+    <div class="fechahora${e.todoDia?' solo':''}">
+      <input type="date" id="fechaFin" value="${e.fechaFin||e.fecha}">
+      ${e.todoDia?`<input type="hidden" id="evFin" value="${e.fin||'10:00'}">`
+        :`<button class="campo" data-h="fin">${e.fin}<svg viewBox="0 0 12 8"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><input type="hidden" id="evFin" value="${e.fin}">`}
+    </div>
+  </div>
+  ${dias(e)>1?`<div class="note">Ocupa ${dias(e)} días. Te va a quedar bloqueado del ${fcorta(e.fecha)} al ${fcorta(e.fechaFin)}.</div>`:''}
   <div class="f"><label>Dónde</label><input id="lugar" value="${(e.lugar||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
   <div class="aviso">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2 7.5-2 7.5h16s-2-1.5-2-7.5z"/><path d="M10.3 19.5a2 2 0 0 0 3.4 0"/></svg>
@@ -1097,6 +1115,12 @@ function pintarEvento(){
     editando.estado='presupuestado';editando.factura=1;pintarEvento()};
   tDia.onclick=()=>{leerEv();editando.todoDia=editando.todoDia?0:1;pintarEvento()};
   shBody.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>abrirHoras(b.dataset.h));
+  // mover el inicio arrastra el final, nunca al revés
+  const fI=document.getElementById('fecha'), fF=document.getElementById('fechaFin');
+  if(fI)fI.onchange=()=>{const d=editando.fechaFin&&editando.fecha?dias(editando):1;
+    leerEv();if(d>1){const n=new Date(fromIso(editando.fecha));n.setDate(n.getDate()+d-1);
+    editando.fechaFin=iso(n)}else editando.fechaFin=editando.fecha;pintarEvento()};
+  if(fF)fF.onchange=()=>{leerEv();pintarEvento()};
 
   if(!esNota){
     seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();editando.estado=b.dataset.e;pintarEvento()});
@@ -1120,6 +1144,8 @@ function leerEv(){
   editando.titulo=q('titulo').value;
   editando.fecha=q('fecha').value;
   // ojo: 'fin' a secas choca con el contenedor de Finanzas
+  if(q('fechaFin'))editando.fechaFin=q('fechaFin').value;
+  if(editando.fechaFin&&editando.fechaFin<editando.fecha)editando.fechaFin=editando.fecha;
   if(q('evIni'))editando.ini=q('evIni').value;
   if(q('evFin'))editando.fin=q('evFin').value;
   editando.lugar=q('lugar').value;
