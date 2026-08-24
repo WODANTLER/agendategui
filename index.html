@@ -16,16 +16,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* cuarto oscuro: negro cálido, no negro puro */
-  --paper:#141513; --surface:#1E1F1C; --ink:#EDECE8; --ink-2:#9A9B95; --ink-3:#6B6C66;
-  --hair:#33342F; --hair-2:#262723; --wash:#232420;
-  --oro:#C9A96A;
-  /* estados, subidos de luz para que respiren sobre el fondo oscuro */
-  --c-presu:#8F9089; --c-confi:#C7564A; --c-entre:#D19A3C; --c-cobra:#6E9159;
-  --p-efec:#88976A; --neg:#C4655A;
+  /* claro por defecto */
+  --paper:#EFEEEA; --surface:#FFFFFF; --ink:#16171A; --ink-2:#63656A; --ink-3:#9C9D97;
+  --hair:#D8D7D1; --hair-2:#E8E7E2; --wash:#F6F5F2;
+  --oro:#9C7C33;
+  --c-presu:#7C7D76; --c-confi:#AF4034; --c-entre:#B37A22; --c-cobra:#4E6B41;
+  --p-efec:#6B7A4C; --neg:#AF5A4E;
+  --chip-tx:#FFFFFF; --raya:#F4F3EE; --sombra:rgba(22,23,26,.20); --velo:rgba(22,23,26,.40);
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
   --ui:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --mono:'DM Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+:root[data-tema="oscuro"]{
+  --paper:#141513; --surface:#1E1F1C; --ink:#EDECE8; --ink-2:#9A9B95; --ink-3:#6B6C66;
+  --hair:#33342F; --hair-2:#262723; --wash:#232420;
+  --oro:#C9A96A;
+  --c-presu:#8F9089; --c-confi:#C7564A; --c-entre:#D19A3C; --c-cobra:#6E9159;
+  --p-efec:#88976A; --neg:#C4655A;
+  --chip-tx:#14150F; --raya:#24261F; --sombra:rgba(0,0,0,.5); --velo:rgba(0,0,0,.58);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html,body{height:100%;overscroll-behavior:none}
@@ -36,7 +44,7 @@ body{font-family:var(--ui);background:var(--paper);color:var(--ink);-webkit-font
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{font:inherit;color:inherit;width:100%;background:var(--surface);border:1px solid var(--hair);
   border-radius:7px;padding:11px 12px;outline:none;appearance:none}
-input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0 2px rgba(237,236,232,.12)}
+input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0 2px color-mix(in srgb,var(--ink) 12%,transparent)}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
 .top{padding:calc(var(--safe-t) + 14px) 18px 0;flex:none}
@@ -57,7 +65,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .d .dots{display:flex;gap:2px;height:3px}
 .d .dots i{width:3px;height:3px;border-radius:50%;display:block}
 .d.hoy .num{color:var(--c-entre)}
-.d.sel{background:var(--ink)} .d.sel .num{color:var(--paper)} .d.sel .dow{color:rgba(20,21,19,.5)}
+.d.sel{background:var(--ink)} .d.sel .num{color:var(--paper)} .d.sel .dow{color:color-mix(in srgb,var(--paper) 60%,transparent)}
 
 .view{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .view[hidden]{display:none}
@@ -83,9 +91,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .mdow span{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:center}
 
 
-.mc.off{background:transparent;border-color:rgba(201,169,106,.05)} .mc.off .mn{opacity:.4}
+.mc.off{background:transparent;border-color:color-mix(in srgb,var(--oro) 5%,transparent)} .mc.off .mn{opacity:.4}
 
-.mc.hoy{border-color:rgba(201,169,106,.55);background:rgba(201,169,106,.045)}
+.mc.hoy{border-color:color-mix(in srgb,var(--oro) 55%,transparent);background:color-mix(in srgb,var(--oro) 5%,transparent)}
 .mc.hoy .mn{color:var(--oro);font-weight:500}
 .mc.sel{border-color:var(--oro);box-shadow:0 0 0 1px var(--oro)}
 
@@ -147,15 +155,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .tabbar button.on{color:var(--ink);font-weight:600}
 .fab{position:absolute;right:18px;bottom:calc(78px + var(--safe-b));width:52px;height:52px;border-radius:50%;
   background:var(--ink);color:var(--paper);font-size:26px;font-weight:300;line-height:50px;text-align:center;
-  box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:20}
+  box-shadow:0 6px 20px var(--sombra);z-index:20}
 .fab:active{transform:scale(.94)}
 .fabg{position:absolute;right:16px;bottom:calc(20px + var(--safe-b));width:48px;height:48px;border-radius:50%;
   background:var(--ink);color:var(--paper);font-size:24px;font-weight:300;line-height:46px;text-align:center;
-  box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:60;display:none}
+  box-shadow:0 6px 20px var(--sombra);z-index:60;display:none}
 #sheet.gastos .fabg{display:block}
 .fabg:active{transform:scale(.94)}
 
-#scrim{position:absolute;inset:0;background:rgba(0,0,0,.58);opacity:0;pointer-events:none;transition:opacity .22s;z-index:40}
+#scrim{position:absolute;inset:0;background:var(--velo);opacity:0;pointer-events:none;transition:opacity .22s;z-index:40}
 #scrim.on{opacity:1;pointer-events:auto}
 #sheet{position:absolute;left:0;right:0;bottom:0;max-height:93%;background:var(--paper);border-radius:18px 18px 0 0;
   transform:translateY(101%);transition:transform .28s cubic-bezier(.32,.72,0,1);z-index:50;display:flex;flex-direction:column}
@@ -222,7 +230,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pv-row .nm small{font-size:10.5px;color:var(--ink-3)}
 .pv-row .am{font-family:var(--mono);font-size:12.5px;letter-spacing:-.03em;white-space:nowrap}
-.ev.nota{background:repeating-linear-gradient(135deg,var(--surface),var(--surface) 6px,#24261F 6px,#24261F 12px);
+.ev.nota{background:repeating-linear-gradient(135deg,var(--surface),var(--surface) 6px,var(--raya) 6px,var(--raya) 12px);
   border-style:dashed}
 .ev.nota .t{font-weight:500;color:var(--ink-2)}
 .tiposeg{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:2px}
@@ -254,10 +262,10 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:.4;cursor:pointer}
   background:var(--surface);padding:0 10px;display:flex;align-items:center;justify-content:space-between;
   gap:6px;font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink)}
 .campo svg{width:10px;height:7px;flex:none;opacity:.45}
-.campo.act{border-color:var(--ink);box-shadow:0 0 0 2px rgba(237,236,232,.12)}
+.campo.act{border-color:var(--ink);box-shadow:0 0 0 2px color-mix(in srgb,var(--ink) 12%,transparent)}
 .tpop{position:absolute;left:14px;right:14px;bottom:calc(14px + var(--safe-b));z-index:70;
   background:var(--surface);border:1px solid var(--hair);border-radius:13px;
-  box-shadow:0 -12px 40px rgba(0,0,0,.55);overflow:hidden;display:none}
+  box-shadow:0 -12px 40px var(--sombra);overflow:hidden;display:none}
 .tpop.on{display:block}
 .tpop-h{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;
   border-bottom:1px solid var(--hair-2)}
@@ -288,12 +296,12 @@ button svg,.picker svg,.tabbar svg{flex:none}
   -webkit-appearance:none;appearance:none}
 .cfg select:focus{box-shadow:none;border:none}
 /* celdas del mes con los títulos adentro, como en su Google Calendar */
-.mc{background:var(--surface);border:1px solid rgba(201,169,106,.17);border-radius:5px;min-height:80px;
+.mc{background:var(--surface);border:1px solid color-mix(in srgb,var(--oro) 17%,transparent);border-radius:5px;min-height:80px;
   padding:3px 3px 4px;display:flex;flex-direction:column;gap:2px;align-items:stretch;overflow:hidden}
 .mh{display:flex;align-items:baseline;justify-content:space-between;gap:2px;padding:0 2px 1px}
 .mn{font-family:var(--mono);font-size:10px;color:var(--ink-2);line-height:1}
 .mtot{font-family:var(--mono);font-size:8px;color:var(--ink-3);letter-spacing:-.03em;line-height:1}
-.chip{display:block;font-size:8.5px;line-height:1.5;padding:1px 3px;border-radius:2px;color:#14150F;
+.chip{display:block;font-size:8.5px;line-height:1.5;padding:1px 3px;border-radius:2px;color:var(--chip-tx);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;letter-spacing:-.01em;
   font-weight:500}
 .chip.libre{background:none;color:var(--ink-3);border:1px dashed var(--hair);font-weight:400}
@@ -307,17 +315,17 @@ button svg,.picker svg,.tabbar svg{flex:none}
 .mespills button.on{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:600}
 .mespills .anio{flex:none;display:flex;align-items:center;font-family:var(--mono);font-size:11px;
   color:var(--ink-3);padding:0 4px}
-.verhist{width:100%;margin-top:16px;padding:13px;border:1px solid rgba(201,169,106,.4);
+.verhist{width:100%;margin-top:16px;padding:13px;border:1px solid color-mix(in srgb,var(--oro) 40%,transparent);
   border-radius:8px;background:var(--surface);font-size:13px;color:var(--oro);text-align:center}
-.verhist:active{background:rgba(201,169,106,.09)}
+.verhist:active{background:color-mix(in srgb,var(--oro) 9%,transparent)}
 .anio-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   margin:18px 2px 8px;padding-top:2px}
 .anio-h b{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink-2)}
 .anio-h span{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-.box.add{border-color:rgba(201,169,106,.32)}
-.box.add:active{background:rgba(201,169,106,.08)}
+.box.add{border-color:color-mix(in srgb,var(--oro) 32%,transparent)}
+.box.add:active{background:color-mix(in srgb,var(--oro) 8%,transparent)}
 .box .plus{margin-left:auto;flex:none;width:19px;height:19px;border-radius:50%;
-  border:1px solid rgba(201,169,106,.55);color:var(--oro);font-size:13px;line-height:17px;
+  border:1px solid color-mix(in srgb,var(--oro) 55%,transparent);color:var(--oro);font-size:13px;line-height:17px;
   text-align:center;font-weight:400}
 .box.add:active .plus{background:var(--oro);color:var(--paper);border-color:var(--oro)}
 /* ── pantalla de acceso ── */
@@ -352,6 +360,11 @@ button svg,.picker svg,.tabbar svg{flex:none}
 .fechahora.solo{grid-template-columns:1fr}
 .chip.multi{border-left:3px solid rgba(0,0,0,.3)}
 .todod .rango{font-family:var(--mono);font-size:10px;color:var(--ink-3);flex:none}
+.temasel{display:flex;gap:4px;background:var(--wash);border:1px solid var(--hair-2);
+  border-radius:8px;padding:3px}
+.temasel button{padding:6px 13px;font-size:12px;color:var(--ink-2);border-radius:6px}
+.temasel button.on{background:var(--surface);color:var(--ink);font-weight:600;
+  box-shadow:0 1px 2px rgba(0,0,0,.08)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -445,6 +458,34 @@ const CATS={
 };
 const PERIODS={mensual:'cada mes',trimestral:'cada trimestre',anual:'cada año'};
 
+/* Los colores viven en CSS. Acá solo la copia que necesita el JS
+   para pintarlos en línea; cambian al tocar el tema. */
+const PAL={
+  claro:{presu:'#7C7D76',confi:'#AF4034',entre:'#B37A22',cobra:'#4E6B41',nota:'#3F6E97',
+    efec:'#6B7A4C',tran:'#3F6E97',bizu:'#7458A8',tarj:'#A87A3C',
+    cat:['#AF5A4E','#3F6E97','#7458A8','#A87A3C','#3F8A8A','#4E6B41','#7C7D76','#63656A']},
+  oscuro:{presu:'#8F9089',confi:'#C7564A',entre:'#D19A3C',cobra:'#6E9159',nota:'#5E90C4',
+    efec:'#88976A',tran:'#5E90C4',bizu:'#9678C4',tarj:'#C39554',
+    cat:['#C4655A','#5E90C4','#9678C4','#C39554','#5FA6A6','#6E9159','#8F9089','#9A9B95']}
+};
+let tema='claro';
+try{tema=localStorage.getItem('tema')||'claro'}catch(e){}
+function aplicarTema(t){
+  tema=t;
+  try{localStorage.setItem('tema',t)}catch(e){}
+  document.documentElement.dataset.tema = t==='oscuro' ? 'oscuro' : '';
+  const p=PAL[t]||PAL.claro;
+  ESTADOS.presupuestado.hex=p.presu; ESTADOS.confirmado.hex=p.confi;
+  ESTADOS.entregado.hex=p.entre;     ESTADOS.cobrado.hex=p.cobra;
+  COL_NOTA=p.nota;
+  COBROS.efectivo.hex=p.efec; COBROS.transferencia.hex=p.tran;
+  COBROS.bizum.hex=p.bizu;    COBROS.tarjeta.hex=p.tarj;
+  Object.keys(CATS).forEach((k,i)=>{CATS[k].hex=p.cat[i]});
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.setAttribute('content', t==='oscuro'?'#141513':'#EFEEEA');
+}
+
+
 /* ── datos: vienen de Firestore, ya no hay arrays de prueba ── */
 let eventos=[], clientes=[], gastos=[];
 
@@ -472,7 +513,7 @@ const inic=n=>(n||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('
 const fcorta=s=>fromIso(s).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
 const esNota=e=>e.tipo==='nota';
 const trabajos=()=>eventos.filter(e=>!esNota(e));   // las notas no son plata
-const COL_NOTA='#5E90C4';   // azul: lo personal, como sus citas
+let COL_NOTA='#3F6E97';   // azul: lo personal, como sus citas
 const colorDe=e=>esNota(e)?COL_NOTA:ESTADOS[e.estado].hex;
 
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
@@ -983,8 +1024,15 @@ function renderFin(){
         ${[7,15,20].map(v=>`<option value="${v}"${Math.round(IRPF_P*100)===v?' selected':''}>${v} %</option>`).join('')}
       </select>
     </div>
+    <div class="cfg">
+      <span class="cl">Tema<small>Cómo se ve la app</small></span>
+      <div class="temasel" id="temaSel">
+        <button data-t="claro" class="${tema!=='oscuro'?'on':''}">Claro</button>
+        <button data-t="oscuro" class="${tema==='oscuro'?'on':''}">Oscuro</button>
+      </div>
+    </div>
     <button class="verhist" id="salir" style="margin-top:14px">Cerrar sesión</button>
-    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:14px">v9 · 24 ago</div>
+    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:14px">v10 · 24 ago</div>
   </div>`;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
@@ -993,6 +1041,7 @@ function renderFin(){
   addIngreso.onclick=()=>{editando=null;abrirEvento(null,'trabajo')};
   addGasto.onclick=()=>{editando=null;editarGasto(null,true)};
   cfgRet.onchange=()=>{IRPF_P=+cfgRet.value/100;renderFin()};
+  temaSel.querySelectorAll('button').forEach(b=>b.onclick=()=>{aplicarTema(b.dataset.t);render()});
   salir.onclick=()=>{if(confirm('¿Cerrar sesión?'))DB.salir()};
   fin.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{filtroG=b.dataset.fg;vistaGastos()});
 }
@@ -1014,15 +1063,15 @@ function elegirTipo(){
   <div class="pick-h">Nuevo</div>
   <div class="picker" id="picker">
     <button data-t="trabajo">
-      <span class="pi" style="background:rgba(201,169,106,.13);border:1px solid rgba(201,169,106,.22)">
-        <svg viewBox="0 0 32 32" fill="none"><path d="M4.2 10.6h4l1.6-2.7a1.5 1.5 0 0 1 1.3-.7h9.8a1.5 1.5 0 0 1 1.3.7l1.6 2.7h4a1.6 1.6 0 0 1 1.6 1.6v10.8a1.6 1.6 0 0 1-1.6 1.6H4.2a1.6 1.6 0 0 1-1.6-1.6V12.2a1.6 1.6 0 0 1 1.6-1.6Z" stroke="#C9A96A" stroke-width="1.5" stroke-linejoin="round"/><circle cx="16" cy="17.6" r="5.1" stroke="#C9A96A" stroke-width="1.5"/><path d="M16 12.5v4.1l3.6-2m-3.6 2-3.6 2M16 16.6l3.6 2m-3.6-2v4.2" stroke="#C9A96A" stroke-width="1.1" stroke-linecap="round" opacity=".55"/><circle cx="25.2" cy="13.7" r="1.05" fill="#C9A96A"/></svg>
+      <span class="pi" style="background:color-mix(in srgb,var(--oro) 13%,transparent);border:1px solid color-mix(in srgb,var(--oro) 22%,transparent)">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M4.2 10.6h4l1.6-2.7a1.5 1.5 0 0 1 1.3-.7h9.8a1.5 1.5 0 0 1 1.3.7l1.6 2.7h4a1.6 1.6 0 0 1 1.6 1.6v10.8a1.6 1.6 0 0 1-1.6 1.6H4.2a1.6 1.6 0 0 1-1.6-1.6V12.2a1.6 1.6 0 0 1 1.6-1.6Z" style="stroke:var(--oro)" stroke-width="1.5" stroke-linejoin="round"/><circle cx="16" cy="17.6" r="5.1" style="stroke:var(--oro)" stroke-width="1.5"/><path d="M16 12.5v4.1l3.6-2m-3.6 2-3.6 2M16 16.6l3.6 2m-3.6-2v4.2" style="stroke:var(--oro)" stroke-width="1.1" stroke-linecap="round" opacity=".55"/><circle cx="25.2" cy="13.7" r="1.05" style="fill:var(--oro)"/></svg>
       </span>
       <span class="tx"><b>Trabajo</b><small>Rodaje, sesión o entrega. Con cliente, importe y cobro.</small></span>
       <span class="ar">&rsaquo;</span>
     </button>
     <button data-t="nota">
-      <span class="pi" style="background:rgba(201,169,106,.13);border:1px solid rgba(201,169,106,.22)">
-        <svg viewBox="0 0 32 32" fill="none"><path d="M16 4.4c-.95 0-1.72.77-1.72 1.72v1.02a7.5 7.5 0 0 0-5.78 7.3v3.3c0 1.7-.66 3.32-1.84 4.53l-.35.36a.85.85 0 0 0 .6 1.45h18.18a.85.85 0 0 0 .6-1.45l-.35-.36a6.5 6.5 0 0 1-1.84-4.53v-3.3a7.5 7.5 0 0 0-5.78-7.3V6.12c0-.95-.77-1.72-1.72-1.72Z" stroke="#C9A96A" stroke-width="1.5" stroke-linejoin="round"/><path d="M13.1 26.6a2.95 2.95 0 0 0 5.8 0" stroke="#C9A96A" stroke-width="1.5" stroke-linecap="round"/><path d="M16 11.6v2.1" stroke="#C9A96A" stroke-width="1.2" stroke-linecap="round" opacity=".5"/></svg>
+      <span class="pi" style="background:color-mix(in srgb,var(--oro) 13%,transparent);border:1px solid color-mix(in srgb,var(--oro) 22%,transparent)">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M16 4.4c-.95 0-1.72.77-1.72 1.72v1.02a7.5 7.5 0 0 0-5.78 7.3v3.3c0 1.7-.66 3.32-1.84 4.53l-.35.36a.85.85 0 0 0 .6 1.45h18.18a.85.85 0 0 0 .6-1.45l-.35-.36a6.5 6.5 0 0 1-1.84-4.53v-3.3a7.5 7.5 0 0 0-5.78-7.3V6.12c0-.95-.77-1.72-1.72-1.72Z" style="stroke:var(--oro)" stroke-width="1.5" stroke-linejoin="round"/><path d="M13.1 26.6a2.95 2.95 0 0 0 5.8 0" style="stroke:var(--oro)" stroke-width="1.5" stroke-linecap="round"/><path d="M16 11.6v2.1" style="stroke:var(--oro)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/></svg>
       </span>
       <span class="tx"><b>Recordatorio</b><small>Algo de tu vida, sin cliente ni plata de por medio.</small></span>
       <span class="ar">&rsaquo;</span>
@@ -1404,6 +1453,7 @@ function render(){
   if(tab==='cli')renderCli();
   if(tab==='fin')renderFin();
 }
+aplicarTema(tema);
 render();
 
 /* cada minuto: mueve la línea de la hora actual y, si cruzó la
