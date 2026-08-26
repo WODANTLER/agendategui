@@ -126,7 +126,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .segp button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .perio{display:flex;align-items:center;justify-content:space-between;margin:14px 0 2px}
 .perio .pn{font-family:var(--mono);font-size:13px}
-.bars{display:flex;align-items:flex-end;gap:6px;height:84px;margin-top:6px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:84px;margin-top:6px;padding:0}
 .bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end}
 .bcol .stack{display:flex;flex-direction:column-reverse;gap:1.5px}
 .bcol .stack i{display:block;border-radius:1px}
@@ -148,7 +148,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
   border:1px solid var(--hair);border-radius:3px;padding:1px 5px;color:var(--ink-3);margin-left:5px;vertical-align:1px}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;display:block}
 
-.tabbar{flex:none;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);
   background:var(--surface);padding-bottom:var(--safe-b)}
 .tabbar button{padding:11px 0 13px;font-size:10.5px;color:var(--ink-3);display:flex;flex-direction:column;align-items:center;gap:4px}
 .tabbar button .ico{width:17px;height:17px;display:block}
@@ -365,6 +365,187 @@ button svg,.picker svg,.tabbar svg{flex:none}
 .temasel button{padding:6px 13px;font-size:12px;color:var(--ink-2);border-radius:6px}
 .temasel button.on{background:var(--surface);color:var(--ink);font-weight:600;
   box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* ═══════════════════════════════════════════════════════════
+   ESCRITORIO · a partir de 900px
+   La barra de abajo pasa a la izquierda, el panel de detalle
+   entra desde la derecha y el mes aprovecha el ancho.
+   ═══════════════════════════════════════════════════════════ */
+.marca{display:none}
+
+@media (min-width:900px){
+  body{align-items:stretch}
+  #phone{
+    max-width:none;width:100%;height:100dvh;border:none;
+    display:grid;
+    grid-template-columns:236px minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+  }
+
+  /* ── barra lateral ── */
+  .tabbar{
+    grid-column:1;grid-row:1/3;
+    display:flex;flex-direction:column;align-items:stretch;gap:3px;
+    border-top:none;border-right:1px solid var(--hair);
+    background:var(--paper);padding:22px 14px 18px;
+  }
+  .marca{
+    display:block;font-size:15px;font-weight:600;letter-spacing:-.025em;
+    padding:0 10px 22px;color:var(--ink);
+  }
+  .marca i{
+    display:block;width:26px;height:26px;border:2px solid var(--oro);border-radius:6px;
+    margin-bottom:11px;position:relative;
+  }
+  .marca i::before{content:'';position:absolute;inset:-2px -2px auto -2px;height:6px;
+    background:var(--oro);border-radius:4px 4px 0 0}
+  .tabbar button{
+    flex-direction:row;justify-content:flex-start;gap:11px;
+    padding:11px 12px;border-radius:8px;font-size:13.5px;
+  }
+  .tabbar button:hover{background:var(--wash)}
+  .tabbar button.on{background:var(--surface);border:1px solid var(--hair-2)}
+  .tabbar button .ico{width:18px;height:18px}
+
+
+  /* ── cabecera y vistas ── */
+  .top{grid-column:2;grid-row:1;padding:26px 32px 0}
+  .view{grid-column:2;grid-row:2;padding:0}
+  .mes{font-size:28px}
+  .mes em{font-size:23px}
+
+  /* ── mes: celdas altas, más títulos ── */
+  #mesgrid{padding:6px 32px 40px;max-width:1180px}
+  .mcells{gap:4px}
+  .mc{min-height:128px;padding:6px 6px 7px;gap:3px;border-radius:7px}
+  .mn{font-size:12px}
+  .mtot{font-size:10px}
+  .chip{font-size:11px;line-height:1.5;padding:2px 6px;border-radius:3px}
+  .mas{font-size:10px}
+  .mdow span{font-size:10px}
+  .pv{max-width:760px}
+
+  /* ── día ── */
+  #grid{max-width:860px;padding:0 32px 60px}
+  .lanes{left:58px;right:32px}
+  .now{left:50px;right:32px}
+  .strip{max-width:860px;padding:14px 32px 10px}
+  .mespills{padding:13px 32px 10px;max-width:1180px}
+
+  /* ── clientes y finanzas, en columna legible ── */
+  #fin,#cli{max-width:660px;padding:26px 32px 60px}
+
+  /* ── panel de detalle, desde la derecha ── */
+  #sheet{
+    left:auto;right:0;top:0;bottom:0;width:430px;max-height:none;
+    border-radius:0;border-left:1px solid var(--hair);
+    transform:translateX(101%);
+  }
+  #sheet.on{transform:translateX(0)}
+  .grab{display:none}
+  .sh-head{padding:20px 20px 12px;border-bottom:1px solid var(--hair-2)}
+  .sh-body{padding:4px 20px 40px}
+  .fabg{right:20px;bottom:20px}
+  .tpop{left:20px;right:20px;bottom:20px}
+
+  /* ── el + ── */
+  .fab{right:28px;bottom:28px;width:56px;height:56px;line-height:54px;font-size:28px}
+}
+
+/* pantallas muy anchas: que no se estire de más */
+@media (min-width:1400px){
+  #mesgrid,.mespills{max-width:1280px}
+}
+
+/* ── Finanzas: tarjetas plegables ── */
+.hero-num{min-width:0}
+.acc{background:var(--surface);border:1px solid var(--hair-2);border-radius:12px;
+  margin-top:10px;overflow:hidden}
+.acc-h{display:flex;align-items:center;gap:12px;width:100%;padding:15px 16px;text-align:left}
+.acc-h .t{flex:1;font-size:14px;font-weight:600;letter-spacing:-.015em}
+.acc-h .v{font-family:var(--mono);font-size:13.5px;color:var(--ink-2);letter-spacing:-.03em}
+.acc-h .cv{width:11px;height:7px;flex:none;color:var(--ink-3);transition:transform .2s ease}
+.acc.on{border-color:var(--hair)}
+.acc.on .acc-h{border-bottom:1px solid var(--hair-2)}
+.acc.on .acc-h .cv{transform:rotate(180deg)}
+.acc.on .acc-h .v{color:var(--ink)}
+.acc-h:active{background:var(--wash)}
+.acc-b{display:none;padding:6px 16px 14px}
+.acc.on .acc-b{display:block}
+.acc-b .rows{background:none;border:none;border-radius:0}
+.acc-b .r{padding:12px 2px}
+.acc-b .r.tot{background:none;border-top:1px solid var(--hair);margin-top:2px}
+.acc-b .note{margin-top:12px}
+.sec.grafico .lbl{margin-bottom:4px}
+
+/* Con mouse, el relleno gris se ve barato. Un hilo dorado por dentro
+   no mueve el layout y se lee como algo pensado. */
+.r.tap,.cli-row,.acc,.box.add{transition:box-shadow .15s ease,border-color .15s ease}
+@media (hover:hover){
+  .r.tap:hover{background:none;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--oro) 55%,transparent)}
+  .r.tap:hover b{color:var(--ink)}
+  .cli-row:hover{background:none;border-radius:8px;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--oro) 55%,transparent)}
+  .acc-h:hover{background:none}
+  .acc:has(.acc-h:hover){border-color:color-mix(in srgb,var(--oro) 60%,transparent)}
+  .acc:has(.acc-h:hover) .acc-h .v,
+  .acc:has(.acc-h:hover) .acc-h .cv{color:var(--ink)}
+  .box.add:hover{border-color:color-mix(in srgb,var(--oro) 65%,transparent)}
+  .box.add:hover .plus{border-color:var(--oro)}
+  .verhist:hover{border-color:var(--oro)}
+}
+.r.tap:active{background:none;box-shadow:inset 0 0 0 1px var(--oro)}
+.cli-row:active{background:none;border-radius:8px;box-shadow:inset 0 0 0 1px var(--oro)}
+
+@media (min-width:900px){
+  /* una sola columna centrada: con las tarjetas plegadas no hace falta partir */
+  #fin{max-width:760px;padding:28px 34px 90px;margin:0 auto}
+
+  #fin .sec.periodo{display:flex;align-items:center;gap:20px;margin-top:0}
+  #fin .segp{width:auto;min-width:300px;flex:none}
+  #fin .perio{margin:0;flex:1;gap:10px;justify-content:flex-end}
+  #fin .perio .pn{order:2;min-width:160px;text-align:center;font-size:14px}
+  #fin .perio .pill:first-of-type{order:1}
+  #fin .perio .pill:last-of-type{order:3}
+
+  #fin .sec.hero{
+    background:var(--surface);border:1px solid var(--hair-2);border-radius:13px;
+    display:grid;grid-template-columns:minmax(200px,.85fr) minmax(300px,1.15fr);
+    gap:34px;align-items:center;padding:24px 24px 26px;margin-top:20px;
+  }
+  #fin .sec.hero .big{font-size:50px;letter-spacing:-.05em}
+  #fin .sec.hero .big small{font-size:25px}
+  #fin .box{background:var(--wash);border-color:var(--hair-2)}
+  #fin .box .v{font-size:22px}
+
+  #fin .sec.grafico{
+    background:var(--surface);border:1px solid var(--hair-2);border-radius:13px;
+    padding:17px 20px 19px;margin-top:14px;
+  }
+  #fin .sec.grafico .lbl{padding-bottom:12px;border-bottom:1px solid var(--hair-2);margin-bottom:4px}
+  #fin .bars{height:160px;gap:16px;margin-top:16px;border-bottom:1px solid var(--hair-2)}
+  #fin .bars i{width:20px!important}
+  #fin .blbls{gap:16px;margin-top:8px}
+  #fin .leg{margin-top:14px;padding-top:13px;border-top:1px solid var(--hair-2)}
+
+  .acc{margin-top:12px}
+  .acc-h{padding:17px 20px}
+  .acc-h .t{font-size:15px}
+  .acc-h .v{font-size:14.5px}
+  .acc-b{padding:8px 20px 18px}
+  #fin .cfg{background:var(--wash);border-color:var(--hair-2)}
+  #fin .verhist{background:var(--wash)}
+
+  #cli{max-width:760px;padding:28px 34px 90px;margin:0 auto}
+  #cli .sec{background:var(--surface);border:1px solid var(--hair-2);border-radius:13px;
+    padding:17px 20px 8px;margin-top:16px}
+  #cli .lbl{padding-bottom:12px;border-bottom:1px solid var(--hair-2);margin-bottom:2px}
+  #cli .rows{background:none;border:none}
+  #cli .cli-row{padding:13px 6px;border-radius:8px;margin:0 -4px}
+  #cli .box{background:var(--wash);border-color:var(--hair-2)}
+}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -391,9 +572,11 @@ button svg,.picker svg,.tabbar svg{flex:none}
   <button class="fab" id="fab" aria-label="Nuevo">+</button>
 
   <nav class="tabbar">
+    <div class="marca"><i></i>Personal Calendar</div>
     <button class="on" data-tab="cal"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendario</button>
     <button data-tab="cli"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c.9-3.7 3.9-5.6 7.5-5.6s6.6 1.9 7.5 5.6"/></svg>Clientes</button>
     <button data-tab="fin"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V10M10 19V5M16 19v-6M22 19H2"/></svg>Finanzas</button>
+    <button class="ajustes-nav" id="btnAjustes"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9.92 5.21 L10.19 2.67 L13.81 2.67 L14.08 5.21 L15.33 5.73 L17.31 4.12 L19.88 6.69 L18.27 8.67 L18.79 9.92 L21.33 10.19 L21.33 13.81 L18.79 14.08 L18.27 15.33 L19.88 17.31 L17.31 19.88 L15.33 18.27 L14.08 18.79 L13.81 21.33 L10.19 21.33 L9.92 18.79 L8.67 18.27 L6.69 19.88 L4.12 17.31 L5.73 15.33 L5.21 14.08 L2.67 13.81 L2.67 10.19 L5.21 9.92 L5.73 8.67 L4.12 6.69 L6.69 4.12 L8.67 5.73 Z"/><circle cx="12" cy="12" r="3.1"/></svg>Ajustes</button>
   </nav>
 
   <div id="login" class="on">
@@ -428,7 +611,8 @@ button svg,.picker svg,.tabbar svg{flex:none}
 /* ═══ Demo · agenda + finanzas · Joaco Anzoátegui ═══ */
 function hoyCero(){const d=new Date();d.setHours(0,0,0,0);return d}
 let HOY=hoyCero();          // se actualiza solo al cruzar la medianoche
-const IVA_P=.21;
+// Tipo general. Se puede cambiar en Ajustes.
+let IVA_P=.21;
 // Retención de IRPF en factura. Se cambia desde Finanzas → Ajustes.
 // Tipo general.
 let IRPF_P=.15;
@@ -498,6 +682,8 @@ const lun=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));retu
 const min=t=>{if(typeof t!=='string'||t.indexOf(':')<0)return 0;
   const[h,m]=t.split(':').map(Number);
   return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+let MAXCHIPS=window.innerWidth>=900?5:3;
+let BARH=window.innerWidth>=900?128:74;
 const finDe=e=>e.fechaFin&&e.fechaFin>e.fecha?e.fechaFin:e.fecha;
 const enDia=(e,k)=>k>=e.fecha&&k<=finDe(e);
 const dias=e=>Math.round((fromIso(finDe(e))-fromIso(e.fecha))/86400000)+1;
@@ -518,6 +704,7 @@ const colorDe=e=>esNota(e)?COL_NOTA:ESTADOS[e.estado].hex;
 
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
 let modo='mes',pRef=new Date(HOY),filtroG='todos';
+let abierto={gastos:false,impuestos:false,cobros:false,meses:false};
 
 function rango(){
   const y=pRef.getFullYear(),m=pRef.getMonth();
@@ -618,9 +805,9 @@ function renderMes(){
     const evs=eventos.filter(e=>enDia(e,k))
       .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
     const tot=evs.reduce((s,e)=>s+((esNota(e)||e.fecha!==k)?0:+e.importe||0),0);
-    const chips=evs.slice(0,3).map(e=>
+    const chips=evs.slice(0,MAXCHIPS).map(e=>
       `<span class="chip" style="background:${colorDe(e)}">${e.titulo}</span>`).join('');
-    const mas=evs.length>3?`<span class="mas">+${evs.length-3}</span>`:'';
+    const mas=evs.length>MAXCHIPS?`<span class="mas">+${evs.length-MAXCHIPS}</span>`:'';
     const num=tot?(tot>=1000?(tot/1000).toFixed(1).replace('.',',')+'k':tot):'';
     cells+=`<button class="mc ${off?'off':''} ${k===iso(HOY)?'hoy':''} ${k===iso(sel)&&diaAbierto?'sel':''}" data-f="${k}">
       <span class="mh"><span class="mn">${d.getDate()}</span>${num?`<span class="mtot">${num}</span>`:''}</span>
@@ -859,7 +1046,7 @@ function pintarGasto(){
 
   <div class="calc">
     <div class="r"><span>Importe</span><b>${eur2(imp)}</b></div>
-    ${g.factura?`<div class="r"><span>IVA deducible <small>${g.deduc<100?g.deduc+' % de afectación':'21 %'}</small></span><b>${eur2(imp*IVA_P*g.deduc/100)}</b></div>`
+    ${g.factura?`<div class="r"><span>IVA deducible <small>${g.deduc<100?g.deduc+' % de afectación':Math.round(IVA_P*100)+' %'}</small></span><b>${eur2(imp*IVA_P*g.deduc/100)}</b></div>`
       :`<div class="r"><span>IVA deducible <small>sin factura, no se puede deducir</small></span><b>—</b></div>`}
     ${g.repite?`<div class="r tot"><span>Impacto anual</span><b>${eur2(imp*(g.period==='mensual'?12:g.period==='trimestral'?4:1))}</b></div>`
       :g.amort?`<div class="r tot"><span>Cuota mensual</span><b>${eur2(cuota)}</b></div>`
@@ -944,14 +1131,14 @@ function renderFin(){
       ms.push({n:MESES[mm],ing:ev.reduce((s,e)=>s+e.importe,0),gas:sumG(gastosPeriodo(rr))});
       cur.setMonth(cur.getMonth()+1);
     }
-    desg=`<div class="sec"><div class="lbl">Mes a mes</div><div class="rows">
+    desg=`<div class="rows">
       ${ms.map(m=>`<div class="r"><span style="flex:1;text-transform:capitalize">${m.n}<small>${eur(m.ing)} entró · ${eur(m.gas)} salió</small></span>
       <b style="color:${m.ing-m.gas>=0?'var(--c-cobra)':'var(--neg)'}">${eur(m.ing-m.gas)}</b></div>`).join('')}
-    </div></div>`;
+    </div>`;
   }
 
   fin.innerHTML=`
-  <div class="sec">
+  <div class="sec periodo">
     <div class="segp" id="segp">
       <button data-m="mes" class="${modo==='mes'?'on':''}">Mes</button>
       <button data-m="trim" class="${modo==='trim'?'on':''}">Trimestre</button>
@@ -960,89 +1147,87 @@ function renderFin(){
       <button class="pill" id="pNext">›</button></div>
   </div>
 
-  <div class="sec" style="margin-top:16px">
-    <div class="lbl">Te quedó</div>
-    <div class="big" style="color:${quedo>=0?'var(--ink)':'var(--neg)'}">${Math.round(quedo).toLocaleString('es-ES')}<small>€</small></div>
-    <div class="sub">${eur(totalIng)} entró · ${eur(totalG)} salió</div>
+  <div class="sec hero" style="margin-top:16px">
+    <div class="hero-num">
+      <div class="lbl">Te quedó</div>
+      <div class="big" style="color:${quedo>=0?'var(--ink)':'var(--neg)'}">${Math.round(quedo).toLocaleString('es-ES')}<small>€</small></div>
+      <div class="sub">${eur(totalIng)} entró · ${eur(totalG)} salió</div>
+    </div>
     <div class="duo">
       <button class="box add" id="addIngreso"><span class="k"><i style="background:var(--c-cobra)"></i>Ingresos<span class="plus">+</span></span><span class="v">${eur(totalIng)}</span></button>
       <button class="box add" id="addGasto"><span class="k"><i style="background:var(--neg)"></i>Gastos<span class="plus">+</span></span><span class="v">${eur(totalG)}</span></button>
     </div>
   </div>
 
-  <div class="sec">
+  <div class="sec grafico">
     <div class="lbl">Entra y sale</div>
     <div class="bars">${bars.map(b=>`<div class="bcol" style="opacity:${b.act?1:.68}">
       <div style="display:flex;gap:2px;align-items:flex-end;justify-content:center">
-        <i style="display:block;width:9px;height:${Math.max(2,b.ing/maxB*74)}px;background:var(--c-cobra);border-radius:1px"></i>
-        <i style="display:block;width:9px;height:${Math.max(2,b.gas/maxB*74)}px;background:var(--neg);border-radius:1px"></i>
+        <i style="display:block;width:9px;height:${Math.max(2,b.ing/maxB*BARH)}px;background:var(--c-cobra);border-radius:1px"></i>
+        <i style="display:block;width:9px;height:${Math.max(2,b.gas/maxB*BARH)}px;background:var(--neg);border-radius:1px"></i>
       </div></div>`).join('')}</div>
     <div class="blbls">${bars.map(b=>`<div>${b.l}</div>`).join('')}</div>
     <div class="leg"><span><i style="background:var(--c-cobra)"></i>Ingresos</span><span><i style="background:var(--neg)"></i>Gastos</span></div>
   </div>
 
-  <div class="sec">
-    <div class="lbl">En qué se fue</div>
-    <div class="rows">
-      <button class="r tap" data-fg="fijos"><span style="flex:1">Gastos fijos<small>${gFijos.length} conceptos, se cargan solos</small></span><b>${eur(sumG(gFijos))}</b></button>
-      <button class="r tap" data-fg="vars"><span style="flex:1">Gastos variables<small>compras y gastos puntuales</small></span><b>${eur(sumG(gVars))}</b></button>
-      <button class="r tap" data-fg="trab"><span style="flex:1">Gastos de trabajos<small>asistentes, alquileres, equipo extra</small></span><b>${eur(sumG(gTrab))}</b></button>
-      <div class="r tot"><span>Total</span><b>${eur(totalG)}</b></div>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="lbl">Cómo te pagaron</div>
-    <div class="rows">${Object.entries(COBROS).map(([k,v])=>`<div class="r"><span style="flex:1">${v.lbl}
-      <i class="bar" style="width:${Math.max(3,porCobro[k]/maxC*100)}%;background:${v.hex};opacity:.5"></i></span><b>${eur(porCobro[k])}</b></div>`).join('')}
-      <div class="r tot"><span>Total cobrado</span><b>${eur(Object.values(porCobro).reduce((a,b)=>a+b,0))}</b></div></div>
-  </div>
-
-  <div class="sec">
-    <div class="lbl">Impuestos · sobre lo facturado</div>
-    <div class="rows">
-      <div class="r"><span>Base facturada</span><b>${eur2(baseF)}</b></div>
-      <div class="r"><span>IVA repercutido <small>21 %</small></span><b>${eur2(ivaRep)}</b></div>
-      <div class="r"><span>IVA soportado <small>gastos con factura</small></span><b>−${eur2(ivaSop)}</b></div>
-      <div class="r tot"><span>IVA a pagar (303)</span><b>${eur2(a303)}</b></div></div>
-    <div class="rows" style="margin-top:9px">
-      <div class="r"><span>Gastos deducibles</span><b>${eur2(gastoDed)}</b></div>
-      <div class="r"><span>Rendimiento neto</span><b>${eur2(rendim)}</b></div>
-      <div class="r"><span>IRPF ya retenido <small>15 % en facturas a empresa</small></span><b>${eur2(retIrpf)}</b></div>
-      <div class="r tot"><span>IRPF a pagar (130)</span><b>${exento130?'0,00 € · exento':eur2(a130)}</b></div></div>
-    ${exento130?`<div class="note">El ${Math.round(pctRet*100)} % de lo que facturaste lleva retención. Como pasa el 70 %, este trimestre no te toca presentar el modelo 130.</div>`:''}
-    ${baseN?`<div class="note">Estos números salen solo de los ${eur(baseF)} facturados. Los ${eur(baseN)} sin factura quedan fuera del cálculo y aparecen aparte, arriba.</div>`:''}
-  </div>
-
-  ${desg}
-
-  <div class="sec">
-    <div class="lbl">Ajustes</div>
-    <div class="cfg">
-      <span class="cl">Retención de IRPF en factura<small>La que te descuenta el cliente empresa</small></span>
-      <select id="cfgRet">
-        ${[7,15,20].map(v=>`<option value="${v}"${Math.round(IRPF_P*100)===v?' selected':''}>${v} %</option>`).join('')}
-      </select>
-    </div>
-    <div class="cfg">
-      <span class="cl">Tema<small>Cómo se ve la app</small></span>
-      <div class="temasel" id="temaSel">
-        <button data-t="claro" class="${tema!=='oscuro'?'on':''}">Claro</button>
-        <button data-t="oscuro" class="${tema==='oscuro'?'on':''}">Oscuro</button>
+  <div class="acc ${abierto.gastos?'on':''}">
+    <button class="acc-h" data-acc="gastos">
+      <span class="t">Gastos</span><span class="v">${eur(totalG)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="acc-b">
+      <div class="rows">
+        <button class="r tap" data-fg="fijos"><span style="flex:1">Gastos fijos<small>${gFijos.length} conceptos, se cargan solos</small></span><b>${eur(sumG(gFijos))}</b></button>
+        <button class="r tap" data-fg="vars"><span style="flex:1">Gastos variables<small>compras y gastos puntuales</small></span><b>${eur(sumG(gVars))}</b></button>
+        <button class="r tap" data-fg="trab"><span style="flex:1">Gastos de trabajos<small>asistentes, alquileres, equipo extra</small></span><b>${eur(sumG(gTrab))}</b></button>
+        <div class="r tot"><span>Total</span><b>${eur(totalG)}</b></div>
       </div>
     </div>
-    <button class="verhist" id="salir" style="margin-top:14px">Cerrar sesión</button>
-    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:14px">v10 · 24 ago</div>
-  </div>`;
+  </div>
+
+  <div class="acc ${abierto.impuestos?'on':''}">
+    <button class="acc-h" data-acc="impuestos">
+      <span class="t">Impuestos</span><span class="v">${eur2(a303)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="acc-b">
+      <div class="rows">
+        <div class="r"><span>Base facturada</span><b>${eur2(baseF)}</b></div>
+        <div class="r"><span>IVA repercutido <small>${Math.round(IVA_P*100)} %</small></span><b>${eur2(ivaRep)}</b></div>
+        <div class="r"><span>IVA soportado <small>gastos con factura</small></span><b>−${eur2(ivaSop)}</b></div>
+        <div class="r tot"><span>IVA a pagar (303)</span><b>${eur2(a303)}</b></div></div>
+      <div class="rows" style="margin-top:9px">
+        <div class="r"><span>Gastos deducibles</span><b>${eur2(gastoDed)}</b></div>
+        <div class="r"><span>Rendimiento neto</span><b>${eur2(rendim)}</b></div>
+        <div class="r"><span>IRPF ya retenido <small>${Math.round(IRPF_P*100)} % en facturas a empresa</small></span><b>${eur2(retIrpf)}</b></div>
+        <div class="r tot"><span>IRPF a pagar (130)</span><b>${exento130?'0,00 € · exento':eur2(a130)}</b></div></div>
+      ${exento130?`<div class="note">El ${Math.round(pctRet*100)} % de lo que facturaste lleva retención. Como pasa el 70 %, este trimestre no te toca presentar el modelo 130.</div>`:''}
+      ${baseN?`<div class="note">Estos números salen solo de los ${eur(baseF)} facturados. Los ${eur(baseN)} sin factura quedan fuera del cálculo y aparecen aparte, arriba.</div>`:''}
+    </div>
+  </div>
+
+  <div class="acc ${abierto.cobros?'on':''}">
+    <button class="acc-h" data-acc="cobros">
+      <span class="t">Me pagaron</span><span class="v">${eur(Object.values(porCobro).reduce((a,b)=>a+b,0))}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="acc-b">
+      <div class="rows">${Object.entries(COBROS).map(([k,v])=>`<div class="r"><span style="flex:1">${v.lbl}
+        <i class="bar" style="width:${Math.max(3,porCobro[k]/maxC*100)}%;background:${v.hex};opacity:.5"></i></span><b>${eur(porCobro[k])}</b></div>`).join('')}
+        <div class="r tot"><span>Total cobrado</span><b>${eur(Object.values(porCobro).reduce((a,b)=>a+b,0))}</b></div></div>
+    </div>
+  </div>
+
+  ${desg?`<div class="acc ${abierto.meses?'on':''}">
+    <button class="acc-h" data-acc="meses">
+      <span class="t">Mes a mes</span><span class="v"></span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="acc-b">${desg}</div>
+  </div>`:''}
+
+`;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
   pPrev.onclick=()=>moverP(-1);pNext.onclick=()=>moverP(1);
   // cargar de una, sin pasar por el calendario ni por la lista
   addIngreso.onclick=()=>{editando=null;abrirEvento(null,'trabajo')};
   addGasto.onclick=()=>{editando=null;editarGasto(null,true)};
-  cfgRet.onchange=()=>{IRPF_P=+cfgRet.value/100;renderFin()};
-  temaSel.querySelectorAll('button').forEach(b=>b.onclick=()=>{aplicarTema(b.dataset.t);render()});
-  salir.onclick=()=>{if(confirm('¿Cerrar sesión?'))DB.salir()};
+  fin.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.acc; abierto[k]=!abierto[k]; renderFin();
+  });
   fin.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{filtroG=b.dataset.fg;vistaGastos()});
 }
 function moverP(d){
@@ -1113,7 +1298,7 @@ function pintarEvento(){
     <div class="chk"><button id="tFac" class="${e.factura?'on':''}"><span class="bx">✓</span>Lleva factura</button></div></div>
   <div class="calc">
     <div class="r"><span>Tu tarifa</span><b>${eur2(imp)}</b></div>
-    ${e.factura?`<div class="r"><span>IVA 21 % <small>no es tuyo: se lo devolvés a Hacienda</small></span><b>+ ${eur2(iva)}</b></div>
+    ${e.factura?`<div class="r"><span>IVA ${Math.round(IVA_P*100)} % <small>no es tuyo: se lo devolvés a Hacienda</small></span><b>+ ${eur2(iva)}</b></div>
     <div class="r"><span>Retención ${IRPF_P*100} % <small>${esEmp?'adelanto de tu IRPF, te lo descuentan en la renta':'no aplica a particular'}</small></span><b>${irpf?'− '+eur2(irpf):'—'}</b></div>
     <div class="r tot"><span>Entra al banco</span><b>${eur2(imp+iva-irpf)}</b></div>`
     :`<div class="r"><span>Sin factura <small>no entra en el cálculo de impuestos</small></span><b>—</b></div>
@@ -1212,6 +1397,44 @@ function leerEv(){
 /* ── control del sheet ── */
 function abrir(){sheet.classList.toggle('gastos',modoEd==='gastos');scrim.classList.add('on');sheet.classList.add('on')}
 function cerrar(){scrim.classList.remove('on');sheet.classList.remove('on');editando=null;volverA=null;shSave.style.visibility='visible';cerrarHoras()}
+/* ── ajustes, en su propio panel ── */
+function vistaAjustes(){
+  modoEd='ajustes';volverA=null;editando=null;shSave.style.visibility='hidden';
+  shBody.innerHTML=`
+  <div style="font-size:19px;font-weight:600;letter-spacing:-.02em;margin-top:2px">Ajustes</div>
+  <div class="f"><label>Facturación</label>
+    <div class="cfg">
+      <span class="cl">IVA<small>El que le sumás al cliente en la factura</small></span>
+      <select id="cfgIva">
+        ${[0,4,10,21].map(v=>`<option value="${v}"${Math.round(IVA_P*100)===v?' selected':''}>${v} %</option>`).join('')}
+      </select>
+    </div>
+    <div class="cfg" style="margin-top:9px">
+      <span class="cl">Retención de IRPF<small>La que te descuenta el cliente empresa</small></span>
+      <select id="cfgRet">
+        ${[7,15,20].map(v=>`<option value="${v}"${Math.round(IRPF_P*100)===v?' selected':''}>${v} %</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div class="f"><label>Apariencia</label>
+    <div class="cfg">
+      <span class="cl">Tema<small>Cómo se ve la app</small></span>
+      <div class="temasel" id="temaSel">
+        <button data-t="claro" class="${tema!=='oscuro'?'on':''}">Claro</button>
+        <button data-t="oscuro" class="${tema==='oscuro'?'on':''}">Oscuro</button>
+      </div>
+    </div>
+  </div>
+  <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v21 · 24 ago</div>`;
+  const ci=document.getElementById('cfgIva');
+  if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
+  const cr=document.getElementById('cfgRet');
+  if(cr)cr.onchange=()=>{IRPF_P=+cr.value/100;vistaAjustes();render()};
+  temaSel.querySelectorAll('button').forEach(b=>b.onclick=()=>{aplicarTema(b.dataset.t);vistaAjustes();render()});
+  abrir();
+}
+
 /* ── selector de hora propio ── */
 let campoHora=null;
 function abrirHoras(cual){
@@ -1299,11 +1522,12 @@ function mover(d){
   sel=new Date(sel);render();
 }
 
-document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>irA(b.dataset.tab));
+document.querySelectorAll('.tabbar button[data-tab]').forEach(b=>b.onclick=()=>irA(b.dataset.tab));
+btnAjustes.onclick=vistaAjustes;
 function irA(t){
   tab=t;
   if(t==='cal'){vistaCal='mes';diaAbierto=null}   // volver a la pestaña siempre muestra el mes
-  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  document.querySelectorAll('.tabbar button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   render();
 }
 
@@ -1455,6 +1679,13 @@ function render(){
 }
 aplicarTema(tema);
 render();
+
+/* al pasar de móvil a escritorio cambia cuántos títulos entran por día */
+window.addEventListener('resize',()=>{
+  const ancho=window.innerWidth>=900;
+  const n=ancho?5:3, h=ancho?128:74;
+  if(n!==MAXCHIPS||h!==BARH){MAXCHIPS=n;BARH=h;render()}
+});
 
 /* cada minuto: mueve la línea de la hora actual y, si cruzó la
    medianoche, cambia el día marcado como hoy */
