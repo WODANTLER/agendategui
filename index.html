@@ -414,10 +414,13 @@ button svg,.picker svg,.tabbar svg{flex:none}
   .mes{font-size:28px}
   .mes em{font-size:23px}
 
-  /* ── mes: celdas altas, más títulos ── */
-  #mesgrid{padding:6px 32px 40px;max-width:1180px}
-  .mcells{gap:4px}
-  .mc{min-height:128px;padding:6px 6px 7px;gap:3px;border-radius:7px}
+  /* ── mes: centrado, y que llene la pantalla ── */
+  #mesgrid{
+    padding:6px 32px 40px;max-width:1700px;margin:0 auto;
+    min-height:100%;display:flex;flex-direction:column;
+  }
+  .mcells{gap:5px;flex:1;grid-auto-rows:minmax(118px,1fr)}
+  .mc{min-height:118px;padding:7px 7px 8px;gap:3px;border-radius:7px}
   .mn{font-size:12px}
   .mtot{font-size:10px}
   .chip{font-size:11px;line-height:1.5;padding:2px 6px;border-radius:3px}
@@ -426,14 +429,13 @@ button svg,.picker svg,.tabbar svg{flex:none}
   .pv{max-width:760px}
 
   /* ── día ── */
-  #grid{max-width:860px;padding:0 32px 60px}
+  #grid{max-width:900px;padding:0 32px 60px;margin:0 auto}
   .lanes{left:58px;right:32px}
   .now{left:50px;right:32px}
-  .strip{max-width:860px;padding:14px 32px 10px}
-  .mespills{padding:13px 32px 10px;max-width:1180px}
+  .strip{max-width:900px;padding:14px 32px 10px;margin:0 auto}
+  .mespills{padding:13px 32px 10px;max-width:1700px;margin:0 auto}
 
   /* ── clientes y finanzas, en columna legible ── */
-  #fin,#cli{max-width:660px;padding:26px 32px 60px}
 
   /* ── panel de detalle, desde la derecha ── */
   #sheet{
@@ -452,9 +454,10 @@ button svg,.picker svg,.tabbar svg{flex:none}
   .fab{right:28px;bottom:28px;width:56px;height:56px;line-height:54px;font-size:28px}
 }
 
-/* pantallas muy anchas: que no se estire de más */
-@media (min-width:1400px){
-  #mesgrid,.mespills{max-width:1280px}
+/* monitores grandes: más títulos por día, que hay lugar */
+@media (min-width:1500px){
+  .mc{min-height:140px}
+  .chip{font-size:11.5px;padding:3px 7px}
 }
 
 /* ── Finanzas: tarjetas plegables ── */
@@ -546,6 +549,19 @@ button svg,.picker svg,.tabbar svg{flex:none}
   #cli .box{background:var(--wash);border-color:var(--hair-2)}
 }
 
+.fin-top{display:block}
+.sinDatos{padding:30px 0 22px;text-align:center;font-size:13px;color:var(--ink-3)}
+
+/* monitores grandes: el encabezado y el gráfico, lado a lado */
+@media (min-width:1280px){
+  #fin{max-width:1120px}
+  .fin-top{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+  .fin-top .sec{margin-top:18px}
+  #fin .sec.hero{grid-template-columns:1fr;align-content:center;gap:18px;padding:24px}
+  #fin .sec.hero .big{font-size:46px}
+  #fin .sec.hero .duo{margin-top:4px}
+  #fin .bars{height:130px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -682,7 +698,7 @@ const lun=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));retu
 const min=t=>{if(typeof t!=='string'||t.indexOf(':')<0)return 0;
   const[h,m]=t.split(':').map(Number);
   return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
-let MAXCHIPS=window.innerWidth>=900?5:3;
+let MAXCHIPS=window.innerWidth>=1500?7:window.innerWidth>=900?5:3;
 let BARH=window.innerWidth>=900?128:74;
 const finDe=e=>e.fechaFin&&e.fechaFin>e.fecha?e.fechaFin:e.fecha;
 const enDia=(e,k)=>k>=e.fecha&&k<=finDe(e);
@@ -1120,6 +1136,7 @@ function renderFin(){
       ing:ev.reduce((s,e)=>s+e.importe,0), gas:sumG(gastosPeriodo(rr)), act:i===0});
   }
   const maxB=Math.max(...bars.map(b=>Math.max(b.ing,b.gas)),1);
+  const hayDatos=bars.some(b=>b.ing>0||b.gas>0);
 
   let desg='';
   if(modo!=='mes'){
@@ -1147,6 +1164,7 @@ function renderFin(){
       <button class="pill" id="pNext">›</button></div>
   </div>
 
+  <div class="fin-top">
   <div class="sec hero" style="margin-top:16px">
     <div class="hero-num">
       <div class="lbl">Te quedó</div>
@@ -1161,13 +1179,15 @@ function renderFin(){
 
   <div class="sec grafico">
     <div class="lbl">Entra y sale</div>
-    <div class="bars">${bars.map(b=>`<div class="bcol" style="opacity:${b.act?1:.68}">
+    ${hayDatos?`<div class="bars">${bars.map(b=>`<div class="bcol" style="opacity:${b.act?1:.68}">
       <div style="display:flex;gap:2px;align-items:flex-end;justify-content:center">
         <i style="display:block;width:9px;height:${Math.max(2,b.ing/maxB*BARH)}px;background:var(--c-cobra);border-radius:1px"></i>
         <i style="display:block;width:9px;height:${Math.max(2,b.gas/maxB*BARH)}px;background:var(--neg);border-radius:1px"></i>
       </div></div>`).join('')}</div>
     <div class="blbls">${bars.map(b=>`<div>${b.l}</div>`).join('')}</div>
-    <div class="leg"><span><i style="background:var(--c-cobra)"></i>Ingresos</span><span><i style="background:var(--neg)"></i>Gastos</span></div>
+    <div class="leg"><span><i style="background:var(--c-cobra)"></i>Ingresos</span><span><i style="background:var(--neg)"></i>Gastos</span></div>`
+    :`<div class="sinDatos">Todavía no hay movimientos para comparar.</div>`}
+  </div>
   </div>
 
   <div class="acc ${abierto.gastos?'on':''}">
@@ -1426,7 +1446,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v21 · 24 ago</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v23 · 27 ago</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const cr=document.getElementById('cfgRet');
@@ -1683,7 +1703,7 @@ render();
 /* al pasar de móvil a escritorio cambia cuántos títulos entran por día */
 window.addEventListener('resize',()=>{
   const ancho=window.innerWidth>=900;
-  const n=ancho?5:3, h=ancho?128:74;
+  const n=window.innerWidth>=1500?7:(ancho?5:3), h=ancho?128:74;
   if(n!==MAXCHIPS||h!==BARH){MAXCHIPS=n;BARH=h;render()}
 });
 
