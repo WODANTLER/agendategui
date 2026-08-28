@@ -20,7 +20,7 @@
   --paper:#EFEEEA; --surface:#FFFFFF; --ink:#16171A; --ink-2:#63656A; --ink-3:#9C9D97;
   --hair:#D8D7D1; --hair-2:#E8E7E2; --wash:#F6F5F2;
   --oro:#9C7C33;
-  --c-presu:#7C7D76; --c-confi:#AF4034; --c-entre:#B37A22; --c-cobra:#4E6B41;
+  --c-confi:#AF4034; --c-entre:#B08D1C; --c-cobra:#4E6B41;
   --p-efec:#6B7A4C; --neg:#AF5A4E;
   --chip-tx:#FFFFFF; --raya:#F4F3EE; --sombra:rgba(22,23,26,.20); --velo:rgba(22,23,26,.40);
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
@@ -31,7 +31,7 @@
   --paper:#141513; --surface:#1E1F1C; --ink:#EDECE8; --ink-2:#9A9B95; --ink-3:#6B6C66;
   --hair:#33342F; --hair-2:#262723; --wash:#232420;
   --oro:#C9A96A;
-  --c-presu:#8F9089; --c-confi:#C7564A; --c-entre:#D19A3C; --c-cobra:#6E9159;
+  --c-confi:#C7564A; --c-entre:#D9B93F; --c-cobra:#6E9159;
   --p-efec:#88976A; --neg:#C4655A;
   --chip-tx:#14150F; --raya:#24261F; --sombra:rgba(0,0,0,.5); --velo:rgba(0,0,0,.58);
 }
@@ -562,6 +562,38 @@ button svg,.picker svg,.tabbar svg{flex:none}
   #fin .sec.hero .duo{margin-top:4px}
   #fin .bars{height:130px}
 }
+/* ── menú del botón derecho ── */
+#menu{position:fixed;z-index:300;display:none;background:var(--surface);
+  border:1px solid var(--hair);border-radius:11px;padding:5px;min-width:196px;
+  box-shadow:0 12px 36px var(--sombra)}
+#menu.on{display:block}
+#menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 11px;
+  border-radius:7px;font-size:13px;text-align:left;color:var(--ink)}
+#menu button i{width:9px;height:9px;border-radius:50%;flex:none}
+#menu button.on{font-weight:600}
+#menu button.on::after{content:'✓';margin-left:auto;color:var(--ink-3);font-size:11px}
+#menu button:active{background:var(--wash)}
+@media (hover:hover){#menu button:hover{background:var(--wash)}}
+#menu .sep{height:1px;background:var(--hair-2);margin:5px 4px}
+#menu .mdel{color:#C4655A}
+#menu .mt{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  font-family:var(--mono);padding:7px 11px 5px}
+.seg3{grid-template-columns:repeat(3,1fr)}
+/* ── arrastre ── */
+#fantasma{position:fixed;left:0;top:0;z-index:400;pointer-events:none;
+  border-radius:4px;padding:3px 8px;font-size:11px;font-weight:500;
+  color:var(--chip-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 10px 26px rgba(0,0,0,.30);opacity:.96;
+  transform-origin:0 0;transition:box-shadow .18s ease,scale .18s ease}
+#fantasma.alzado{scale:1.06}
+#fantasma.suelta{transition:transform .19s cubic-bezier(.2,.8,.3,1),opacity .19s ease,scale .19s ease;scale:1}
+.chip.arrastrando{opacity:.22}
+.mc.drop{border-color:var(--oro)!important;
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--oro) 55%,transparent)}
+.mc.drop .mn{color:var(--oro);font-weight:600}
+body.arrastrando{cursor:grabbing;user-select:none;-webkit-user-select:none}
+body.arrastrando .chip{cursor:grabbing}
+@media (hover:hover){.chip{cursor:grab}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -608,6 +640,7 @@ button svg,.picker svg,.tabbar svg{flex:none}
     </div>
   </div>
 
+  <div id="menu"></div>
   <div id="scrim"></div>
   <div id="sheet">
     <div class="grab"></div>
@@ -635,11 +668,16 @@ let IRPF_P=.15;
 
 /* Verde = hecho y cobrado · Rojo = pendiente · Azul = personal.
    Es el código que él ya usa en su Google Calendar. */
-const ESTADOS={presupuestado:{lbl:'Presup.',hex:'#8F9089'},confirmado:{lbl:'Pendiente',hex:'#C7564A'},
-  entregado:{lbl:'Sin cobrar',hex:'#D19A3C'},cobrado:{lbl:'Cobrado',hex:'#6E9159'}};
+/* Semáforo: rojo pendiente · amarillo hecho pero sin cobrar · verde cerrado */
+const ESTADOS={
+  confirmado:{lbl:'Por hacer',        corto:'Por hacer',    hex:'#AF4034'},
+  entregado: {lbl:'Hecho · falta cobrar', corto:'Falta cobrar', hex:'#B08D1C'},
+  cobrado:   {lbl:'Cobrado',          corto:'Cobrado',      hex:'#4E6B41'}};
+/* los que quedaron con el estado viejo se leen como pendientes */
+const estOf=e=>ESTADOS[e.estado]||ESTADOS.confirmado;
 const COBROS={efectivo:{lbl:'Efectivo',hex:'#88976A'},transferencia:{lbl:'Transfer.',hex:'#5E90C4'},
   bizum:{lbl:'Bizum',hex:'#9678C4'},tarjeta:{lbl:'Tarjeta',hex:'#C39554'}};
-const RUBROS=['Automoción','Inmobiliaria','Marca','Hostelería','Evento','Boda'];
+const RUBROS=['Automoción','Arquitectura','Inmobiliaria','Marca','Hostelería','Evento','Boda'];
 const AVISOS={30:'30 minutos antes',60:'1 hora antes',1440:'24 horas antes'};
 const HORARIOS=(()=>{const a=[];for(let h=0;h<24;h++)for(const m of ['00','15','30','45'])
   a.push(String(h).padStart(2,'0')+':'+m);return a})();
@@ -661,10 +699,10 @@ const PERIODS={mensual:'cada mes',trimestral:'cada trimestre',anual:'cada año'}
 /* Los colores viven en CSS. Acá solo la copia que necesita el JS
    para pintarlos en línea; cambian al tocar el tema. */
 const PAL={
-  claro:{presu:'#7C7D76',confi:'#AF4034',entre:'#B37A22',cobra:'#4E6B41',nota:'#3F6E97',
+  claro:{confi:'#AF4034',entre:'#B08D1C',cobra:'#4E6B41',nota:'#3F6E97',
     efec:'#6B7A4C',tran:'#3F6E97',bizu:'#7458A8',tarj:'#A87A3C',
     cat:['#AF5A4E','#3F6E97','#7458A8','#A87A3C','#3F8A8A','#4E6B41','#7C7D76','#63656A']},
-  oscuro:{presu:'#8F9089',confi:'#C7564A',entre:'#D19A3C',cobra:'#6E9159',nota:'#5E90C4',
+  oscuro:{confi:'#C7564A',entre:'#D9B93F',cobra:'#6E9159',nota:'#5E90C4',
     efec:'#88976A',tran:'#5E90C4',bizu:'#9678C4',tarj:'#C39554',
     cat:['#C4655A','#5E90C4','#9678C4','#C39554','#5FA6A6','#6E9159','#8F9089','#9A9B95']}
 };
@@ -675,8 +713,8 @@ function aplicarTema(t){
   try{localStorage.setItem('tema',t)}catch(e){}
   document.documentElement.dataset.tema = t==='oscuro' ? 'oscuro' : '';
   const p=PAL[t]||PAL.claro;
-  ESTADOS.presupuestado.hex=p.presu; ESTADOS.confirmado.hex=p.confi;
-  ESTADOS.entregado.hex=p.entre;     ESTADOS.cobrado.hex=p.cobra;
+  ESTADOS.confirmado.hex=p.confi;
+  ESTADOS.entregado.hex=p.entre; ESTADOS.cobrado.hex=p.cobra;
   COL_NOTA=p.nota;
   COBROS.efectivo.hex=p.efec; COBROS.transferencia.hex=p.tran;
   COBROS.bizum.hex=p.bizu;    COBROS.tarjeta.hex=p.tarj;
@@ -716,7 +754,7 @@ const fcorta=s=>fromIso(s).toLocaleDateString('es-ES',{day:'numeric',month:'shor
 const esNota=e=>e.tipo==='nota';
 const trabajos=()=>eventos.filter(e=>!esNota(e));   // las notas no son plata
 let COL_NOTA='#3F6E97';   // azul: lo personal, como sus citas
-const colorDe=e=>esNota(e)?COL_NOTA:ESTADOS[e.estado].hex;
+const colorDe=e=>esNota(e)?COL_NOTA:estOf(e).hex;
 
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
 let modo='mes',pRef=new Date(HOY),filtroG='todos';
@@ -822,7 +860,7 @@ function renderMes(){
       .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
     const tot=evs.reduce((s,e)=>s+((esNota(e)||e.fecha!==k)?0:+e.importe||0),0);
     const chips=evs.slice(0,MAXCHIPS).map(e=>
-      `<span class="chip" style="background:${colorDe(e)}">${e.titulo}</span>`).join('');
+      `<span class="chip" data-id="${e.id}" style="background:${colorDe(e)}">${e.titulo}</span>`).join('');
     const mas=evs.length>MAXCHIPS?`<span class="mas">+${evs.length-MAXCHIPS}</span>`:'';
     const num=tot?(tot>=1000?(tot/1000).toFixed(1).replace('.',',')+'k':tot):'';
     cells+=`<button class="mc ${off?'off':''} ${k===iso(HOY)?'hoy':''} ${k===iso(sel)&&diaAbierto?'sel':''}" data-f="${k}">
@@ -950,7 +988,7 @@ function historialCliente(id){
     return `<div class="anio-h"><b>${y}</b><span>${l.length} · ${eur(t)}</span></div>
     <div class="rows">${l.map(e=>`<button class="r tap" data-evid="${e.id}">
       <span style="flex:1">${e.titulo}
-        <small>${fcorta(e.fecha)} · ${ESTADOS[e.estado].lbl}${e.cobro?' · '+COBROS[e.cobro].lbl:''}${e.factura?'':' · sin factura'}</small></span>
+        <small>${fcorta(e.fecha)} · ${estOf(e).corto}${e.cobro?' · '+COBROS[e.cobro].lbl:''}${e.factura?'':' · sin factura'}</small></span>
       <b>${e.importe?eur(e.importe):'—'}</b></button>`).join('')}</div>`;
   }).join(''):`<div class="note" style="margin-top:16px">Todavía no hay trabajos con este cliente.</div>`}`;
 
@@ -1289,11 +1327,12 @@ function elegirTipo(){
 function abrirEvento(ev,tipo){
   modoEd='ev';volverA=null;shSave.style.visibility='visible';
   editando=ev?JSON.parse(JSON.stringify(ev)):{id:null,tipo:'trabajo',todoDia:0,titulo:'',cliente:'',rubro:'Automoción',
-    fecha:iso(sel),fechaFin:iso(sel),ini:'10:00',fin:'13:00',aviso:30,importe:'',cobro:'',factura:1,estado:'presupuestado',lugar:'',gastos:[]};
+    fecha:iso(sel),fechaFin:iso(sel),ini:'10:00',fin:'13:00',aviso:30,importe:'',cobro:'',factura:1,estado:'confirmado',lugar:'',gastos:[]};
   if(!editando.aviso)editando.aviso=30;
   if(!editando.fechaFin)editando.fechaFin=editando.fecha;
   if(tipo)editando.tipo=tipo;
   if(!editando.tipo)editando.tipo='trabajo';
+  if(!ESTADOS[editando.estado])editando.estado='confirmado';
   if(editando.tipo==='nota'&&!editando.id){
     editando.estado='confirmado';editando.importe=0;editando.factura=0;editando.cobro='';editando.cliente='';
   }
@@ -1305,8 +1344,8 @@ function pintarEvento(){
   const iva=e.factura?imp*IVA_P:0, irpf=(e.factura&&esEmp)?imp*IRPF_P:0, g=gTot(e);
 
   const bloqueTrabajo = `
-  <div class="f"><label>Estado</label><div class="seg seg4" id="seg">
-    ${Object.entries(ESTADOS).map(([k,v])=>`<button data-e="${k}" class="${e.estado===k?'on':''}" style="--sc:${v.hex}"><i style="background:${v.hex}"></i>${v.lbl}</button>`).join('')}
+  <div class="f"><label>Estado</label><div class="seg seg3" id="seg">
+    ${Object.entries(ESTADOS).map(([k,v])=>`<button data-e="${k}" class="${e.estado===k?'on':''}" style="--sc:${v.hex}"><i style="background:${v.hex}"></i>${v.corto}</button>`).join('')}
   </div></div>
   <div class="f f2">
     <div><label>Cliente</label><input id="cliente" list="cl" value="${(e.cliente||'').replace(/"/g,'&quot;')}" placeholder="Nombre">
@@ -1366,7 +1405,7 @@ function pintarEvento(){
 
   const cv=document.getElementById('convertir');
   if(cv)cv.onclick=()=>{leerEv();editando.tipo='trabajo';editando.todoDia=0;
-    editando.estado='presupuestado';editando.factura=1;pintarEvento()};
+    editando.estado='confirmado';editando.factura=1;pintarEvento()};
   tDia.onclick=()=>{leerEv();editando.todoDia=editando.todoDia?0:1;pintarEvento()};
   shBody.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>abrirHoras(b.dataset.h));
   // mover el inicio arrastra el final, nunca al revés
@@ -1446,7 +1485,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v23 · 27 ago</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v27 · 27 ago</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const cr=document.getElementById('cfgRet');
@@ -1454,6 +1493,201 @@ function vistaAjustes(){
   temaSel.querySelectorAll('button').forEach(b=>b.onclick=()=>{aplicarTema(b.dataset.t);vistaAjustes();render()});
   abrir();
 }
+
+async function persistirEvento(e){await DB.guardarEvento(e)}
+async function borrarEventoApp(id){await DB.borrarEvento(id)}
+
+/* ── menú contextual: cambiar estado sin abrir la ficha ── */
+let menuEv=null, pulsando=null, hubopulso=false;
+
+function abrirMenu(x,y,id){
+  const e=eventos.find(v=>String(v.id)===String(id));
+  if(!e)return;
+  menuEv=e;
+  menu.innerHTML = esNota(e)
+    ? `<div class="mt">Recordatorio</div>
+       <button data-a="abrir">Abrir</button>
+       <button data-a="trabajo">Convertirlo en trabajo</button>
+       <div class="sep"></div>
+       <button data-a="borrar" class="mdel">Eliminar</button>`
+    : `<div class="mt">Estado</div>` +
+      Object.entries(ESTADOS).map(([k,v])=>
+        `<button data-a="est:${k}" class="${e.estado===k?'on':''}"><i style="background:${v.hex}"></i>${v.lbl}</button>`).join('') +
+      `<div class="sep"></div>
+       <button data-a="abrir">Abrir</button>
+       <button data-a="borrar" class="mdel">Eliminar</button>`;
+  menu.classList.add('on');
+  const m=menu.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-m.width-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-m.height-8))+'px';
+}
+function cerrarMenu(){menu.classList.remove('on');menuEv=null}
+
+menu.onclick=async e=>{
+  const b=e.target.closest('[data-a]'); if(!b||!menuEv) return;
+  const a=b.dataset.a, ev=menuEv;
+  cerrarMenu();
+  if(a==='abrir'){abrirEvento(ev);return}
+  if(a==='borrar'){await borrarEventoApp(ev.id);return}
+  if(a==='trabajo'){
+    const n={...ev,tipo:'trabajo',todoDia:0,estado:'confirmado',factura:1};
+    await persistirEvento(n);return;
+  }
+  if(a.startsWith('est:')){
+    await persistirEvento({...ev,estado:a.slice(4)});
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   Arrastrar un trabajo de un día a otro.
+
+   Escritorio: se agarra y se mueve. El botón derecho abre el menú.
+   Móvil: se mantiene apretado medio segundo y el bloque se levanta.
+          Si lo movés, arrastra. Si lo soltás en el sitio, sale el menú.
+   La hora no cambia nunca: solo la fecha.
+   ══════════════════════════════════════════════════════════ */
+let arr=null;          // arrastre en curso
+let pulso=null;        // pulsación esperando a convertirse en arrastre
+let noAbrir=false;     // para que al soltar no se abra la ficha
+
+const UMBRAL=6;        // píxeles antes de considerar que se está moviendo
+
+function esArrastrable(t){
+  return t && t.classList.contains('chip') && t.dataset.id;
+}
+
+function levantar(el,ev,x,y){
+  const r=el.getBoundingClientRect();
+  const g=document.createElement('div');
+  g.id='fantasma';
+  g.textContent=ev.titulo||'Sin título';
+  g.style.background=colorDe(ev);
+  g.style.width=r.width+'px';
+  document.body.appendChild(g);
+  el.classList.add('arrastrando');
+  document.body.classList.add('arrastrando');
+  arr={ev,el,g,offX:x-r.left,offY:y-r.top,destino:null,movido:false};
+  moverFantasma(x,y);
+  requestAnimationFrame(()=>g.classList.add('alzado'));
+}
+
+function moverFantasma(x,y){
+  if(!arr)return;
+  arr.g.style.transform='translate3d('+(x-arr.offX)+'px,'+(y-arr.offY)+'px,0)';
+  arr.g.style.display='none';
+  const bajo=document.elementFromPoint(x,y);
+  arr.g.style.display='';
+  const celda=bajo&&bajo.closest('.mc[data-f]:not(.off)');
+  if(celda!==arr.destino){
+    if(arr.destino)arr.destino.classList.remove('drop');
+    arr.destino=celda||null;
+    if(arr.destino&&arr.destino.dataset.f!==arr.ev.fecha)arr.destino.classList.add('drop');
+  }
+}
+
+async function soltar(){
+  if(!arr)return;
+  const {ev,el,g,destino}=arr;
+  const nueva=destino&&!destino.classList.contains('off')?destino.dataset.f:null;
+  arr=null;
+  document.body.classList.remove('arrastrando');
+  if(destino)destino.classList.remove('drop');
+
+  if(nueva&&nueva!==ev.fecha){
+    // aterrizaje: el fantasma se acomoda en la celda antes de desaparecer
+    const r=destino.getBoundingClientRect();
+    g.classList.add('suelta');
+    g.style.transform='translate3d('+(r.left+7)+'px,'+(r.top+26)+'px,0) scale(1)';
+    g.style.opacity='0';
+    const dias=Math.round((fromIso(nueva)-fromIso(ev.fecha))/86400000);
+    const fin=new Date(fromIso(finDe(ev)));fin.setDate(fin.getDate()+dias);
+    await persistirEvento({...ev,fecha:nueva,fechaFin:iso(fin)});
+    setTimeout(()=>g.remove(),200);
+  }else{
+    // vuelve a su sitio
+    const r=el.getBoundingClientRect();
+    g.classList.add('suelta');
+    g.style.transform='translate3d('+r.left+'px,'+r.top+'px,0) scale(1)';
+    g.style.opacity='0';
+    setTimeout(()=>g.remove(),200);
+    el.classList.remove('arrastrando');
+  }
+}
+
+/* ── ratón ── */
+document.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const t=e.target.closest('[data-id],[data-evid]');
+  if(!t)return;
+  const id=t.dataset.id||t.dataset.evid;
+  const ev=eventos.find(v=>String(v.id)===String(id));
+  if(!ev)return;
+  cerrarMenu();
+  pulso={t,ev,id,x:e.clientX,y:e.clientY,tactil:e.pointerType!=='mouse',armado:false,menu:false};
+  if(pulso.tactil&&esArrastrable(t)){
+    pulso.temp=setTimeout(()=>{
+      if(!pulso)return;
+      pulso.armado=true;
+      if(navigator.vibrate)navigator.vibrate(8);
+      levantar(t,ev,pulso.x,pulso.y);
+    },480);
+  }else if(pulso.tactil){
+    // recordatorios y bloques del día: solo menú
+    pulso.temp=setTimeout(()=>{
+      if(!pulso)return;
+      pulso.menu=true;noAbrir=true;
+      abrirMenu(pulso.x,pulso.y,id);
+    },480);
+  }
+});
+
+document.addEventListener('pointermove',e=>{
+  if(arr){arr.movido=true;moverFantasma(e.clientX,e.clientY);return}
+  if(!pulso)return;
+  const d=Math.hypot(e.clientX-pulso.x,e.clientY-pulso.y);
+  if(d<UMBRAL)return;
+  if(pulso.tactil){clearTimeout(pulso.temp);pulso=null;return}   // scroll normal
+  if(esArrastrable(pulso.t)){noAbrir=true;levantar(pulso.t,pulso.ev,e.clientX,e.clientY)}
+  else pulso=null;
+});
+
+document.addEventListener('pointerup',e=>{
+  if(pulso&&pulso.temp)clearTimeout(pulso.temp);
+  if(arr){
+    if(!arr.movido&&pulso&&pulso.armado){    // levantado pero quieto → menú
+      const id=pulso.id;
+      arr.el.classList.remove('arrastrando');
+      arr.g.remove();document.body.classList.remove('arrastrando');
+      if(arr.destino)arr.destino.classList.remove('drop');
+      arr=null;noAbrir=true;
+      abrirMenu(e.clientX,e.clientY,id);
+    }else{noAbrir=true;soltar()}
+  }
+  pulso=null;
+});
+document.addEventListener('pointercancel',()=>{
+  if(pulso&&pulso.temp)clearTimeout(pulso.temp);
+  pulso=null;
+  if(arr)soltar();
+});
+
+/* mientras se arrastra con el dedo, la página no se mueve */
+document.addEventListener('touchmove',e=>{if(arr)e.preventDefault()},{passive:false});
+
+/* botón derecho */
+document.addEventListener('contextmenu',e=>{
+  const t=e.target.closest('[data-id],[data-evid]');
+  if(!t)return;
+  e.preventDefault();
+  abrirMenu(e.clientX,e.clientY,t.dataset.id||t.dataset.evid);
+});
+
+/* que arrastrar o mantener apretado no abra además la ficha */
+document.addEventListener('click',e=>{
+  if(noAbrir){noAbrir=false;e.stopPropagation();e.preventDefault();return}
+  if(!e.target.closest('#menu'))cerrarMenu();
+},true);
+window.addEventListener('resize',cerrarMenu);
 
 /* ── selector de hora propio ── */
 let campoHora=null;
@@ -1521,6 +1755,8 @@ fabGasto.onclick=()=>{editando=null;editarGasto(null,false)};
 
 strip.onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;sel=fromIso(b.dataset.f);render()};
 mesgrid.onclick=e=>{
+  const ch=e.target.closest('.chip[data-id]');
+  if(ch){abrirEvento(eventos.find(x=>String(x.id)===ch.dataset.id));return}
   const t=e.target.closest('[data-evid]');
   if(t){abrirEvento(eventos.find(x=>x.id===t.dataset.evid));return}
   const b=e.target.closest('[data-f]');if(!b)return;
