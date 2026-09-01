@@ -594,6 +594,18 @@ button svg,.picker svg,.tabbar svg{flex:none}
 body.arrastrando{cursor:grabbing;user-select:none;-webkit-user-select:none}
 body.arrastrando .chip{cursor:grabbing}
 @media (hover:hover){.chip{cursor:grab}}
+/* ── clientes: cobrado y por cobrar, uno al lado del otro ── */
+.cli-top{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.cli-kpi{min-width:0}
+.cli-kpi .big{font-size:31px}
+.cli-kpi .big small{font-size:17px}
+.cli-kpi .sub{font-size:11.5px;line-height:1.35}
+@media (min-width:900px){
+  .cli-top{gap:34px}
+  .cli-kpi .big{font-size:40px}
+  .cli-kpi .big small{font-size:21px}
+  .cli-kpi .sub{font-size:12.5px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -662,6 +674,9 @@ function hoyCero(){const d=new Date();d.setHours(0,0,0,0);return d}
 let HOY=hoyCero();          // se actualiza solo al cruzar la medianoche
 // Tipo general. Se puede cambiar en Ajustes.
 let IVA_P=.21;
+// IRPF estimado del año, para saber cuánto apartar por trabajo.
+// 20 % es el que usa Hacienda en el modelo 130.
+let IRPF_EST=.20;
 // Retención de IRPF en factura. Se cambia desde Finanzas → Ajustes.
 // Tipo general.
 let IRPF_P=.15;
@@ -754,7 +769,10 @@ const fcorta=s=>fromIso(s).toLocaleDateString('es-ES',{day:'numeric',month:'shor
 const esNota=e=>e.tipo==='nota';
 const trabajos=()=>eventos.filter(e=>!esNota(e));   // las notas no son plata
 let COL_NOTA='#3F6E97';   // azul: lo personal, como sus citas
-const colorDe=e=>esNota(e)?COL_NOTA:estOf(e).hex;
+// los recordatorios también tienen semáforo: rojo por hacer, verde hecho
+const colorDe=e=>esNota(e)
+  ? (e.hecho?ESTADOS.cobrado.hex:ESTADOS.confirmado.hex)
+  : estOf(e).hex;
 
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
 let modo='mes',pRef=new Date(HOY),filtroG='todos';
@@ -908,28 +926,44 @@ function renderMes(){
 
 /* ── clientes ── */
 function renderCli(){
+  const cobradoDe=evs=>evs.filter(e=>e.estado==='cobrado').reduce((s,e)=>s+(+e.importe||0),0);
+  const porCobrarDe=evs=>evs.filter(e=>e.estado!=='cobrado').reduce((s,e)=>s+(+e.importe||0),0);
+
   const data=clientes.map(c=>{
     const evs=trabajos().filter(e=>e.cliente===c.nombre);
-    return{...c,total:evs.reduce((s,e)=>s+(+e.importe||0),0),
-      pend:evs.filter(e=>e.estado==='entregado').reduce((s,e)=>s+(+e.importe||0),0),
+    return{...c,cobrado:cobradoDe(evs),porCobrar:porCobrarDe(evs),
       n:evs.length,last:evs.map(e=>e.fecha).sort().pop()};
-  }).sort((a,b)=>b.total-a.total);
+  }).sort((a,b)=>(b.cobrado+b.porCobrar)-(a.cobrado+a.porCobrar));
+
+  const todos=trabajos();
+  const totalCobrado=cobradoDe(todos), totalPorCobrar=porCobrarDe(todos);
+  const nPend=todos.filter(e=>e.estado!=='cobrado'&&+e.importe>0).length;
+
   cli.innerHTML=`
-  <div class="sec"><div class="lbl">Facturación histórica</div>
-    <div class="big">${Math.round(data.reduce((s,c)=>s+c.total,0)).toLocaleString('es-ES')}<small>€</small></div>
-    <div class="sub">${clientes.length} clientes · ${eventos.length} trabajos registrados</div></div>
+  <div class="sec cli-top">
+    <div class="cli-kpi">
+      <div class="lbl">Facturación histórica</div>
+      <div class="big">${Math.round(totalCobrado).toLocaleString('es-ES')}<small>€</small></div>
+      <div class="sub">Ya cobrado · ${clientes.length} clientes</div>
+    </div>
+    <div class="cli-kpi">
+      <div class="lbl">Trabajos por cobrar</div>
+      <div class="big" style="color:var(--c-entre)">${Math.round(totalPorCobrar).toLocaleString('es-ES')}<small>€</small></div>
+      <div class="sub">${nPend} trabajo${nPend===1?'':'s'} sin cobrar</div>
+    </div>
+  </div>
   <div class="sec"><div class="lbl">Todos los clientes</div><div class="rows">
     ${data.map(c=>`<button class="cli-row" data-cid="${c.id}"><span class="av">${inic(c.nombre)}</span>
       <span class="nm"><b>${c.nombre}${c.tipo==='particular'?'<span class="tag">part.</span>':''}</b>
       <small>${c.n} trabajo${c.n===1?'':'s'} · último ${c.last?fcorta(c.last):'—'}</small></span>
-      <span class="amt">${eur(c.total)}${c.pend?`<small>${eur(c.pend)} pend.</small>`:''}</span></button>`).join('')}
+      <span class="amt">${eur(c.cobrado)}${c.porCobrar?`<small>${eur(c.porCobrar)} por cobrar</small>`:''}</span></button>`).join('')}
   </div></div>`;
 }
 function fichaCliente(id){
   const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;
   const evs=trabajos().filter(e=>e.cliente===c.nombre);
-  const total=evs.reduce((s,e)=>s+(+e.importe||0),0);
-  const pend=evs.filter(e=>e.estado==='entregado').reduce((s,e)=>s+(+e.importe||0),0);
+  const total=evs.filter(e=>e.estado==='cobrado').reduce((s,e)=>s+(+e.importe||0),0);
+  const pend=evs.filter(e=>e.estado!=='cobrado').reduce((s,e)=>s+(+e.importe||0),0);
   modoEd='cliVer';volverA=null;shSave.style.visibility='hidden';
   shBody.innerHTML=`
   <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
@@ -937,8 +971,8 @@ function fichaCliente(id){
     <div><div style="font-size:19px;font-weight:600;letter-spacing:-.02em">${c.nombre}</div>
     <div style="font-size:11.5px;color:var(--ink-3);font-family:var(--mono)">${c.tipo==='empresa'?'Empresa':'Particular'}${c.nif?' · '+c.nif:''}</div></div></div>
   <div class="duo" style="margin-top:16px">
-    <div class="box"><span class="k">Facturado total</span><span class="v">${eur(total)}</span></div>
-    <div class="box"><span class="k">Pendiente de cobro</span><span class="v">${eur(pend)}</span></div></div>
+    <div class="box"><span class="k">Ya cobrado</span><span class="v">${eur(total)}</span></div>
+    <div class="box"><span class="k">Por cobrar</span><span class="v" style="color:var(--c-entre)">${eur(pend)}</span></div></div>
   ${(c.tel||c.email)?`<div class="f"><label>Contacto</label><div class="rows">
     ${c.tel?`<div class="r"><span>Teléfono</span><b>${c.tel}</b></div>`:''}
     ${c.email?`<div class="r"><span>Email</span><b style="font-size:11.5px">${c.email}</b></div>`:''}
@@ -957,7 +991,7 @@ function historialCliente(id){
 
   const total=evs.reduce((s,e)=>s+(+e.importe||0),0);
   const cobrado=evs.filter(e=>e.estado==='cobrado').reduce((s,e)=>s+(+e.importe||0),0);
-  const pend=evs.filter(e=>e.estado==='entregado').reduce((s,e)=>s+(+e.importe||0),0);
+  const pend=evs.filter(e=>e.estado!=='cobrado').reduce((s,e)=>s+(+e.importe||0),0);
 
   const porCobro={};Object.keys(COBROS).forEach(k=>porCobro[k]=0);
   evs.forEach(e=>{if(e.cobro)porCobro[e.cobro]+=(+e.importe||0)});
@@ -975,7 +1009,7 @@ function historialCliente(id){
   <div class="duo" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
     <div class="box"><span class="k">Total</span><span class="v" style="font-size:15px">${eur(total)}</span></div>
     <div class="box"><span class="k">Cobrado</span><span class="v" style="font-size:15px">${eur(cobrado)}</span></div>
-    <div class="box"><span class="k">Pendiente</span><span class="v" style="font-size:15px">${eur(pend)}</span></div>
+    <div class="box"><span class="k">Por cobrar</span><span class="v" style="font-size:15px;color:var(--c-entre)">${eur(pend)}</span></div>
   </div>
 
   ${hayCobros?`<div class="f"><label>Cómo te pagó</label><div class="rows">
@@ -1342,6 +1376,15 @@ function pintarEvento(){
   const e=editando, esNota=e.tipo==='nota';
   const imp=+e.importe||0, esEmp=cliDe(e.cliente)?.tipo==='empresa';
   const iva=e.factura?imp*IVA_P:0, irpf=(e.factura&&esEmp)?imp*IRPF_P:0, g=gTot(e);
+  // cuánto hay que apartar de verdad para Hacienda
+  const gIvaJob=e.factura?gIva(e):0;
+  const ivaApartar=Math.max(0,iva-gIvaJob*IVA_P);
+  const baseIrpf=Math.max(0,imp-g);
+  const irpfEst=e.factura?baseIrpf*IRPF_EST:0;
+  const irpfFalta=Math.max(0,irpfEst-irpf);
+  const apartar=ivaApartar+irpfFalta;
+  const gastoReal=g+gIvaJob*IVA_P;   // los gastos salieron con su IVA
+  const tuyo=imp-g-irpfEst;
 
   const bloqueTrabajo = `
   <div class="f"><label>Estado</label><div class="seg seg3" id="seg">
@@ -1358,14 +1401,26 @@ function pintarEvento(){
   <div class="calc">
     <div class="r"><span>Tu tarifa</span><b>${eur2(imp)}</b></div>
     ${e.factura?`<div class="r"><span>IVA ${Math.round(IVA_P*100)} % <small>no es tuyo: se lo devolvés a Hacienda</small></span><b>+ ${eur2(iva)}</b></div>
-    <div class="r"><span>Retención ${IRPF_P*100} % <small>${esEmp?'adelanto de tu IRPF, te lo descuentan en la renta':'no aplica a particular'}</small></span><b>${irpf?'− '+eur2(irpf):'—'}</b></div>
+    <div class="r"><span>Retención ${Math.round(IRPF_P*100)} % <small>${esEmp?'adelanto de tu IRPF, te lo descuentan en la renta':'no aplica a particular'}</small></span><b>${irpf?'− '+eur2(irpf):'—'}</b></div>
     <div class="r tot"><span>Entra al banco</span><b>${eur2(imp+iva-irpf)}</b></div>`
     :`<div class="r"><span>Sin factura <small>no entra en el cálculo de impuestos</small></span><b>—</b></div>
     <div class="r tot"><span>Entra al banco</span><b>${eur2(imp)}</b></div>`}
-    ${g?`<div class="r"><span>Gastos del trabajo</span><b>− ${eur2(g)}</b></div>`:''}
-    <div class="r tot"><span>Tuyo, antes de IRPF</span><b>${eur2(imp-g)}</b></div>
+    ${g?`<div class="r"><span>Gastos del trabajo</span><b>− ${eur2(gastoReal)}</b></div>`:''}
   </div>
-  ${e.factura&&iva?`<div class="note">De los ${eur(imp+iva-irpf)} que te entran, ${eur(iva)} son IVA que vas a devolver en el 303. Tuyos son ${eur(imp)} menos gastos.</div>`:''}
+
+  ${e.factura?`<div class="calc" style="margin-top:10px">
+    <div class="r"><span>IVA a devolver${gIvaJob?` <small>ya descontado el IVA de los gastos</small>`:''}</span><b>${eur2(ivaApartar)}</b></div>
+    <div class="r"><span>IRPF estimado ${Math.round(IRPF_EST*100)} %
+      <small>${irpf?`sobre ${eur(baseIrpf)} · ya te retuvieron ${eur2(irpf)}`:`sobre ${eur(baseIrpf)} · sin retención en factura`}</small></span><b>${eur2(irpfFalta)}</b></div>
+    <div class="r tot"><span>Total de impuestos a apartar</span><b>${eur2(apartar)}</b></div>
+  </div>
+  <div class="calc" style="margin-top:10px">
+    <div class="r tot"><span>Tuyo, después de IRPF</span><b>${eur2(tuyo)}</b></div>
+  </div>
+  <div class="note">De los ${eur(imp+iva-irpf)} que te entran, apartá ${eur(apartar)} para Hacienda${g?` y ${eur(gastoReal)} ya se fueron en gastos`:``}. Te quedan limpios ${eur(tuyo)}.</div>`
+  :`<div class="calc" style="margin-top:10px">
+    <div class="r tot"><span>Te queda</span><b>${eur2(imp-g)}</b></div>
+  </div>`}
   <div class="f"><label>Gastos de este trabajo</label><div id="gastosT">
     ${(e.gastos||[]).map((x,i)=>`<div class="gasto-row">
       <input data-gc="${i}" value="${(x.c||'').replace(/"/g,'&quot;')}" placeholder="Concepto">
@@ -1400,13 +1455,19 @@ function pintarEvento(){
       ${Object.entries(AVISOS).map(([m,t])=>`<option value="${m}" ${String(e.aviso||30)===m?'selected':''}>${t}</option>`).join('')}
     </select>
   </div>
-  ${esNota?`<button class="conv" id="convertir">+ Añadir cliente e importe</button>`:bloqueTrabajo}
+  ${esNota?`<div class="f"><label>Estado</label><div class="seg seg2" id="segNota">
+      <button data-n="0" class="${!e.hecho?'on':''}" style="--sc:${ESTADOS.confirmado.hex}"><i style="background:${ESTADOS.confirmado.hex}"></i>Sin hacer</button>
+      <button data-n="1" class="${e.hecho?'on':''}" style="--sc:${ESTADOS.cobrado.hex}"><i style="background:${ESTADOS.cobrado.hex}"></i>Hecho</button>
+    </div></div>
+    <button class="conv" id="convertir">+ Añadir cliente e importe</button>`:bloqueTrabajo}
   ${e.id?`<button class="del" id="borrar">Eliminar</button>`:''}`;
 
   const cv=document.getElementById('convertir');
   if(cv)cv.onclick=()=>{leerEv();editando.tipo='trabajo';editando.todoDia=0;
     editando.estado='confirmado';editando.factura=1;pintarEvento()};
   tDia.onclick=()=>{leerEv();editando.todoDia=editando.todoDia?0:1;pintarEvento()};
+  const sn=document.getElementById('segNota');
+  if(sn)sn.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();editando.hecho=+b.dataset.n;pintarEvento()});
   shBody.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>abrirHoras(b.dataset.h));
   // mover el inicio arrastra el final, nunca al revés
   const fI=document.getElementById('fecha'), fF=document.getElementById('fechaFin');
@@ -1469,6 +1530,12 @@ function vistaAjustes(){
       </select>
     </div>
     <div class="cfg" style="margin-top:9px">
+      <span class="cl">IRPF estimado del año<small>Para calcular cuánto apartar de cada trabajo</small></span>
+      <select id="cfgEst">
+        ${[15,20,24,30,37].map(v=>`<option value="${v}"${Math.round(IRPF_EST*100)===v?' selected':''}>${v} %</option>`).join('')}
+      </select>
+    </div>
+    <div class="cfg" style="margin-top:9px">
       <span class="cl">Retención de IRPF<small>La que te descuenta el cliente empresa</small></span>
       <select id="cfgRet">
         ${[7,15,20].map(v=>`<option value="${v}"${Math.round(IRPF_P*100)===v?' selected':''}>${v} %</option>`).join('')}
@@ -1485,9 +1552,11 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v27 · 27 ago</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v29 · 31 ago</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
+  const ce=document.getElementById('cfgEst');
+  if(ce)ce.onchange=()=>{IRPF_EST=+ce.value/100;vistaAjustes();render()};
   const cr=document.getElementById('cfgRet');
   if(cr)cr.onchange=()=>{IRPF_P=+cr.value/100;vistaAjustes();render()};
   temaSel.querySelectorAll('button').forEach(b=>b.onclick=()=>{aplicarTema(b.dataset.t);vistaAjustes();render()});
@@ -1506,6 +1575,9 @@ function abrirMenu(x,y,id){
   menuEv=e;
   menu.innerHTML = esNota(e)
     ? `<div class="mt">Recordatorio</div>
+       <button data-a="nota:0" class="${!e.hecho?'on':''}"><i style="background:${ESTADOS.confirmado.hex}"></i>Sin hacer</button>
+       <button data-a="nota:1" class="${e.hecho?'on':''}"><i style="background:${ESTADOS.cobrado.hex}"></i>Hecho</button>
+       <div class="sep"></div>
        <button data-a="abrir">Abrir</button>
        <button data-a="trabajo">Convertirlo en trabajo</button>
        <div class="sep"></div>
@@ -1533,6 +1605,7 @@ menu.onclick=async e=>{
     const n={...ev,tipo:'trabajo',todoDia:0,estado:'confirmado',factura:1};
     await persistirEvento(n);return;
   }
+  if(a.startsWith('nota:')){await persistirEvento({...ev,hecho:+a.slice(5)});return}
   if(a.startsWith('est:')){
     await persistirEvento({...ev,estado:a.slice(4)});
   }
