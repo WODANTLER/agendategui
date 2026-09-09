@@ -143,7 +143,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0
 .cli-row .nm b{display:block;font-size:13.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cli-row .nm small{font-size:10.5px;color:var(--ink-3);display:block;margin-top:1px}
 .cli-row .amt{font-family:var(--mono);font-size:13.5px;letter-spacing:-.03em;text-align:right;white-space:nowrap}
-.cli-row .amt small{display:block;font-family:var(--ui);font-size:10px;color:var(--c-entre);margin-top:2px}
+.cli-row .amt small{display:block;font-family:var(--ui);font-size:10px;color:var(--c-confi);margin-top:2px}
 .tag{display:inline-block;font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
   border:1px solid var(--hair);border-radius:3px;padding:1px 5px;color:var(--ink-3);margin-left:5px;vertical-align:1px}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;display:block}
@@ -624,6 +624,16 @@ body.arrastrando .chip{cursor:grabbing}
 @media (min-width:900px){
   #sheet.centrado{border-left:1px solid var(--hair);width:420px}
 }
+/* ── lo que deben, en rojo ── */
+.duo.trio{grid-template-columns:repeat(3,1fr);gap:8px}
+.duo.trio .box{padding:11px 12px}
+.duo.trio .box .v{font-size:17px}
+.box.deuda .v{color:var(--c-confi)}
+@media (min-width:900px){
+  .duo.trio{gap:10px}
+  .duo.trio .box .v{font-size:20px}
+  #fin .sec.hero{grid-template-columns:minmax(200px,.78fr) minmax(380px,1.22fr)}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -966,7 +976,7 @@ function renderCli(){
     </div>
     <div class="cli-kpi">
       <div class="lbl">Trabajos por cobrar</div>
-      <div class="big" style="color:var(--c-entre)">${Math.round(totalPorCobrar).toLocaleString('es-ES')}<small>€</small></div>
+      <div class="big" style="color:var(--c-confi)">${Math.round(totalPorCobrar).toLocaleString('es-ES')}<small>€</small></div>
       <div class="sub">${nPend} trabajo${nPend===1?'':'s'} sin cobrar</div>
     </div>
   </div>
@@ -990,7 +1000,7 @@ function fichaCliente(id){
     <div style="font-size:11.5px;color:var(--ink-3);font-family:var(--mono)">${c.tipo==='empresa'?'Empresa':'Particular'}${c.nif?' · '+c.nif:''}</div></div></div>
   <div class="duo" style="margin-top:16px">
     <div class="box"><span class="k">Ya cobrado</span><span class="v">${eur(total)}</span></div>
-    <div class="box"><span class="k">Por cobrar</span><span class="v" style="color:var(--c-entre)">${eur(pend)}</span></div></div>
+    <div class="box"><span class="k">Por cobrar</span><span class="v" style="color:var(--c-confi)">${eur(pend)}</span></div></div>
   ${(c.tel||c.email)?`<div class="f"><label>Contacto</label><div class="rows">
     ${c.tel?`<div class="r"><span>Teléfono</span><b>${c.tel}</b></div>`:''}
     ${c.email?`<div class="r"><span>Email</span><b style="font-size:11.5px">${c.email}</b></div>`:''}
@@ -1027,7 +1037,7 @@ function historialCliente(id){
   <div class="duo" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
     <div class="box"><span class="k">Total</span><span class="v" style="font-size:15px">${eur(total)}</span></div>
     <div class="box"><span class="k">Cobrado</span><span class="v" style="font-size:15px">${eur(cobrado)}</span></div>
-    <div class="box"><span class="k">Por cobrar</span><span class="v" style="font-size:15px;color:var(--c-entre)">${eur(pend)}</span></div>
+    <div class="box"><span class="k">Por cobrar</span><span class="v" style="font-size:15px;color:var(--c-confi)">${eur(pend)}</span></div>
   </div>
 
   ${hayCobros?`<div class="f"><label>Cómo te pagó</label><div class="rows">
@@ -1264,11 +1274,12 @@ function renderFin(){
     <div class="hero-num">
       <div class="lbl">Te quedó</div>
       <div class="big" style="color:${quedo>=0?'var(--ink)':'var(--neg)'}">${Math.round(quedo).toLocaleString('es-ES')}<small>€</small></div>
-      <div class="sub">${eur(totalIng)} cobrado · ${eur(totalG)} salió${porCobrar?` · <span style="color:var(--c-entre)">${eur(porCobrar)} por cobrar</span>`:''}</div>
+      <div class="sub">${eur(totalIng)} cobrado · ${eur(totalG)} salió${porCobrar?` · <span style="color:var(--c-confi)">${eur(porCobrar)} por cobrar</span>`:''}</div>
     </div>
-    <div class="duo">
+    <div class="duo trio">
       <button class="box add" id="addIngreso"><span class="k"><i style="background:var(--c-cobra)"></i>Cobrado<span class="plus">+</span></span><span class="v">${eur(totalIng)}</span></button>
       <button class="box add" id="addGasto"><span class="k"><i style="background:var(--neg)"></i>Gastos<span class="plus">+</span></span><span class="v">${eur(totalG)}</span></button>
+      <div class="box deuda"><span class="k"><i style="background:var(--c-confi)"></i>Por cobrar</span><span class="v">${eur(porCobrar)}</span></div>
     </div>
   </div>
 
@@ -1581,7 +1592,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v31 · 31 ago</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v32 · 8 sept</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const ce=document.getElementById('cfgEst');
