@@ -634,6 +634,29 @@ body.arrastrando .chip{cursor:grabbing}
   .duo.trio .box .v{font-size:20px}
   #fin .sec.hero{grid-template-columns:minmax(200px,.78fr) minmax(380px,1.22fr)}
 }
+/* ── tipografía de las filas de clientes ── */
+.cli-row .nm b{font-size:14.5px}
+.cli-row .nm small{font-size:11.5px}
+.cli-row .amt{font-size:15px}
+.cli-row .amt small{font-size:12.5px;font-weight:500;margin-top:3px}
+
+/* ── en la compu, las tarjetas de Finanzas se reparten a lo ancho ── */
+.acc-fila{display:block}
+@media (min-width:900px){
+  #cli .cli-row .nm b{font-size:15.5px}
+  #cli .cli-row .nm small{font-size:12px}
+  #cli .cli-row .amt{font-size:16.5px}
+  #cli .cli-row .amt small{font-size:13.5px}
+
+  #fin{max-width:1240px}
+  .acc-fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+    gap:14px;align-items:start;margin-top:4px}
+  .acc-fila .acc{margin-top:0}
+  .acc-fila .acc-h{padding:15px 17px}
+  .acc-fila .acc-b{padding:8px 17px 16px}
+  .acc-fila .r{padding:11px 2px;font-size:13px}
+  .acc-fila .r b{font-size:13.5px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -1296,6 +1319,8 @@ function renderFin(){
   </div>
   </div>
 
+  <div class="acc-fila">
+
   <div class="acc ${abierto.gastos?'on':''}">
     <button class="acc-h" data-acc="gastos">
       <span class="t">Gastos</span><span class="v">${eur(totalG)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
@@ -1344,6 +1369,8 @@ function renderFin(){
       <span class="t">Mes a mes</span><span class="v"></span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <div class="acc-b">${desg}</div>
   </div>`:''}
+
+  </div>
 
 `;
 
@@ -1592,7 +1619,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v32 · 8 sept</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v33 · 11 sept</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const ce=document.getElementById('cfgEst');
