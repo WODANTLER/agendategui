@@ -50,7 +50,7 @@ const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
 enableIndexedDbPersistence(db).catch(() => {});
 
 /* ── 2 · Estado en memoria ───────────────────────────────────── */
-const estado = { eventos: [], clientes: [], gastos: [] };
+const estado = { eventos: [], clientes: [], gastos: [], deudas: [] };
 const oyentes = [];
 let resolverListo;
 const listo = new Promise((r) => { resolverListo = r; });
@@ -72,7 +72,7 @@ function suscribir(nombre) {
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((x) => !x.borrado);
       estado.error = null;
-      if (++cargadas === 3) resolverListo(estado);
+      if (++cargadas === 4) resolverListo(estado);
       avisar();
     },
     (err) => {
@@ -82,7 +82,7 @@ function suscribir(nombre) {
           ? 'Sin permiso para leer ' + nombre + '. Revisá que estés con la cuenta correcta.'
           : 'No se pudo cargar ' + nombre + ' (' + err.code + '). Los datos que ves pueden estar desactualizados.';
       document.dispatchEvent(new CustomEvent('db-error', { detail: estado.error }));
-      if (++cargadas === 3) resolverListo(estado);
+      if (++cargadas === 4) resolverListo(estado);
       avisar();
     }
   );
@@ -160,6 +160,7 @@ onAuthStateChanged(auth, (user) => {
   suscribir('eventos');
   suscribir('clientes');
   suscribir('gastos');
+  suscribir('deudas');
   document.dispatchEvent(new CustomEvent('db-con-sesion', { detail: user }));
 });
 
@@ -179,4 +180,7 @@ window.DB = {
 
   guardarGasto: (o) => guardar('gastos', o, false),
   borrarGasto: (id) => deleteDoc(doc(db, 'gastos', String(id))),
+
+  guardarDeuda: (o) => guardar('deudas', o, false),
+  borrarDeuda: (id) => deleteDoc(doc(db, 'deudas', String(id))),
 };

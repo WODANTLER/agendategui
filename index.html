@@ -657,6 +657,19 @@ body.arrastrando .chip{cursor:grabbing}
   .acc-fila .r{padding:11px 2px;font-size:13px}
   .acc-fila .r b{font-size:13.5px}
 }
+/* ── tabla de trabajos, como la planilla ── */
+.acc.detalle{margin-top:14px}
+.tabla .r{gap:10px}
+.cel-t{flex:1;min-width:0}
+.cel-t small{display:block;font-size:10.5px;color:var(--ink-3);margin-top:2px}
+.est{font-size:9.5px;font-weight:600;letter-spacing:.02em;padding:3px 8px;border-radius:999px;
+  color:#fff;white-space:nowrap;flex:none;align-self:center}
+@media (min-width:900px){
+  .est{font-size:10.5px;padding:4px 10px}
+  .tabla .r{padding:12px 2px}
+  .acc.detalle .acc-b{padding:8px 20px 18px}
+}
+.acc.deudas .addbig{margin-top:12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -791,7 +804,7 @@ function aplicarTema(t){
 
 
 /* ── datos: vienen de Firestore, ya no hay arrays de prueba ── */
-let eventos=[], clientes=[], gastos=[];
+let eventos=[], clientes=[], gastos=[], deudas=[];
 
 /* ── helpers ── */
 const DOW=['L','M','X','J','V','S','D'];
@@ -827,7 +840,7 @@ const colorDe=e=>esNota(e)
 
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
 let modo='mes',pRef=new Date(HOY),filtroG='todos';
-let abierto={gastos:false,impuestos:false,cobros:false,meses:false};
+let abierto={gastos:false,impuestos:false,cobros:false,meses:false,detalle:false,deudas:false};
 
 function rango(){
   const y=pRef.getFullYear(),m=pRef.getMonth();
@@ -1234,6 +1247,15 @@ function renderFin(){
   const totalIng=cobrados.reduce((s,e)=>s+e.importe,0);
   const porCobrar=conImp.filter(e=>e.estado!=='cobrado').reduce((s,e)=>s+e.importe,0);
 
+  // deudas: no dependen del período, son un saldo abierto
+  const totalDeuda=(deudas||[]).filter(d=>!d.pagada).reduce((s,d)=>s+(+d.monto||0),0);
+  // ahorro acumulado: todo lo que entró menos todo lo que salió, hasta el fin del período
+  const hastaHoy={a:new Date(1970,0,1),b:r.b};
+  const ingAcum=trabajos().filter(e=>fromIso(e.fecha)<=r.b&&+e.importe>0)
+    .reduce((s,e)=>s+(+e.importe||0),0);
+  const gasAcum=gastosPeriodo(hastaHoy).reduce((s,g)=>s+g.mOcc,0);
+  const ahorroAcum=ingAcum-gasAcum;
+
   const gp=gastosPeriodo(r);
   const gFijos=gp.filter(g=>g.tipo==='fijo'),gVars=gp.filter(g=>g.tipo==='variable'),gTrab=gp.filter(g=>g.tipo==='trabajo');
   const sumG=a=>a.reduce((s,g)=>s+g.mOcc,0);
@@ -1372,6 +1394,45 @@ function renderFin(){
 
   </div>
 
+  <div class="acc detalle ${abierto.detalle?'on':''}">
+    <button class="acc-h" data-acc="detalle">
+      <span class="t">Ingresos y gastos</span><span class="v">${conImp.length}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="acc-b">
+      ${conImp.length?`<div class="rows tabla">
+        ${[...conImp].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>`
+          <button class="r tap" data-evid="${e.id}">
+            <span class="cel-t">${e.titulo}<small>${e.cliente||'sin cliente'} · ${fcorta(e.fecha)}</small></span>
+            <span class="est" style="background:${estOf(e).hex}">${estOf(e).corto}</span>
+            <b>${eur(e.importe)}</b>
+          </button>`).join('')}
+      </div>
+      <div class="rows" style="margin-top:12px">
+        <div class="r"><span>Total ingresos<small>todo lo cargado, cobrado o no</small></span><b>${eur(baseF+baseN)}</b></div>
+        <div class="r"><span>Ya cobrado<small>real, en la cuenta</small></span><b style="color:var(--c-cobra)">${eur(totalIng)}</b></div>
+        <div class="r"><span>Pendiente de cobro</span><b style="color:var(--c-confi)">${eur(porCobrar)}</b></div>
+        <div class="r"><span>Total gastos</span><b>− ${eur(totalG)}</b></div>
+        <div class="r tot"><span>Ahorro del mes<small>ingresos menos gastos</small></span><b style="color:${(baseF+baseN-totalG)>=0?'var(--c-cobra)':'var(--neg)'}">${eur(baseF+baseN-totalG)}</b></div>
+        <div class="r tot"><span>Total de ahorros<small>acumulado desde el principio</small></span><b style="color:${ahorroAcum>=0?'var(--c-cobra)':'var(--neg)'}">${eur(ahorroAcum)}</b></div>
+      </div>`
+      :`<div class="sinDatos">No hay trabajos con importe en este período.</div>`}
+    </div>
+  </div>
+
+  <div class="acc deudas ${abierto.deudas?'on':''}">
+    <button class="acc-h" data-acc="deudas">
+      <span class="t">Deudas</span><span class="v" style="color:${totalDeuda?'var(--c-confi)':'var(--ink-2)'}">${eur(totalDeuda)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="acc-b">
+      ${deudas.length?`<div class="rows">
+        ${[...deudas].sort((a,b)=>(a.pagada?1:0)-(b.pagada?1:0)).map(d=>`
+          <button class="r tap" data-deuda="${d.id}">
+            <span class="cel-t">${d.concepto||'Sin concepto'}${d.pagada?'<small>ya pagada</small>':d.nota?`<small>${d.nota}</small>`:''}</span>
+            <b style="${d.pagada?'text-decoration:line-through;opacity:.45':'color:var(--c-confi)'}">${eur(d.monto)}</b>
+          </button>`).join('')}
+        <div class="r tot"><span>Nos quedaría por pagar</span><b style="color:var(--c-confi)">${eur(totalDeuda)}</b></div>
+      </div>`:`<div class="sinDatos">No hay deudas cargadas.</div>`}
+      <button class="addbig" id="addDeuda">+ Añadir deuda</button>
+    </div>
+  </div>
 `;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
@@ -1383,6 +1444,9 @@ function renderFin(){
     const k=b.dataset.acc; abierto[k]=!abierto[k]; renderFin();
   });
   fin.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{filtroG=b.dataset.fg;vistaGastos()});
+  const ad=document.getElementById('addDeuda');
+  if(ad)ad.onclick=()=>{editando=null;editarDeuda(null)};
+  fin.querySelectorAll('[data-deuda]').forEach(b=>b.onclick=()=>editarDeuda(b.dataset.deuda));
 }
 function moverP(d){
   if(modo==='mes')pRef.setMonth(pRef.getMonth()+d);
@@ -1619,7 +1683,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v33 · 11 sept</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v36 · 19 sept</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const ce=document.getElementById('cfgEst');
@@ -1829,6 +1893,42 @@ document.addEventListener('click',e=>{
 },true);
 window.addEventListener('resize',cerrarMenu);
 
+async function persistirDeuda(d){await DB.guardarDeuda(d)}
+async function borrarDeudaApp(id){await DB.borrarDeuda(id)}
+
+/* ── deudas: lo que él debe, aparte de los gastos del negocio ── */
+function editarDeuda(id){
+  const d = id ? deudas.find(x=>String(x.id)===String(id))
+              : {id:null,concepto:'',monto:'',nota:'',pagada:0};
+  if(!d)return;
+  editando=JSON.parse(JSON.stringify(d));
+  modoEd='deuda';volverA=null;shSave.style.visibility='visible';
+  pintarDeuda();abrir();
+}
+function pintarDeuda(){
+  const d=editando;
+  shBody.innerHTML=`
+  <input id="dConcepto" placeholder="¿A quién le debés?" value="${(d.concepto||'').replace(/"/g,'&quot;')}"
+         style="font-size:17px;font-weight:600;padding:12px">
+  <div class="f"><label>Importe</label>
+    <input type="number" inputmode="decimal" id="dMonto" value="${d.monto}" placeholder="0"></div>
+  <div class="f"><label>Nota</label>
+    <input id="dNota" value="${(d.nota||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
+  <div class="swrow" id="swPag">
+    <span class="sl">¿Ya la pagaste?<small>${d.pagada?'Sí, deja de contar en el total':'Todavía no'}</small></span>
+    <span class="sw ${d.pagada?'on':''}"></span></div>
+  ${d.id?`<button class="del" id="dDel">Eliminar deuda</button>`:''}`;
+  swPag.onclick=()=>{leerDeuda();editando.pagada=editando.pagada?0:1;pintarDeuda()};
+  const x=document.getElementById('dDel');
+  if(x)x.onclick=async()=>{const i=editando.id;editando=null;await borrarDeudaApp(i);cerrar();render()};
+}
+function leerDeuda(){
+  const q=i=>document.getElementById(i); if(!q('dConcepto'))return;
+  editando.concepto=q('dConcepto').value;
+  editando.monto=q('dMonto').value;
+  editando.nota=q('dNota').value;
+}
+
 /* ── selector de hora propio ── */
 let campoHora=null;
 function abrirHoras(cual){
@@ -1873,7 +1973,13 @@ shSave.onclick=async ()=>{
     }else if(modoEd==='cliEd'){
       leerCli();if(!guardando.nombre.trim()){cerrar();return}
       await DB.guardarCliente(guardando);cerrar();
-    }else if(modoEd==='gastoEd'){
+    }else if(modoEd==='deuda'){
+    leerDeuda();
+    if(!guardando.concepto.trim())guardando.concepto='Sin concepto';
+    guardando.monto=+guardando.monto||0;
+    await persistirDeuda(guardando);
+    cerrar();
+  }else if(modoEd==='gastoEd'){
       leerGasto();
       if(!guardando.concepto.trim())guardando.concepto='Gasto sin nombre';
       if(!guardando.cat)guardando.cat='Otros';
@@ -1980,7 +2086,7 @@ vd.addEventListener('touchend',e=>{
 (function conectarDB(){
   if(!window.DB){setTimeout(conectarDB,40);return}
   DB.onCambio((d)=>{
-    eventos=d.eventos; clientes=d.clientes; gastos=d.gastos;
+    eventos=d.eventos; clientes=d.clientes; gastos=d.gastos; deudas=d.deudas||[];
     render();
   });
 })();
