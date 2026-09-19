@@ -669,7 +669,38 @@ body.arrastrando .chip{cursor:grabbing}
   .tabla .r{padding:12px 2px}
   .acc.detalle .acc-b{padding:8px 20px 18px}
 }
-.acc.deudas .addbig{margin-top:12px}
+/* ── planilla: cuadrícula de hoja de cálculo ── */
+.hojas{display:grid;grid-template-columns:1fr;gap:14px;margin-top:2px}
+@media (min-width:820px){
+  .hojas{grid-template-columns:1fr 1fr;gap:0}
+  .hojas .hoja+.hoja{border-left:none}
+}
+.hoja{border:1px solid var(--hair);background:var(--surface);overflow:hidden}
+.hoja+.hoja-ancha{margin-top:14px}
+.hfila{display:grid;grid-template-columns:1fr 84px;border-top:1px solid var(--hair-2)}
+.hfila.tres{grid-template-columns:1fr 78px 104px}
+.hfila:first-child{border-top:none}
+.hc{padding:0 9px;height:30px;line-height:30px;font-size:12.5px;
+  border-left:1px solid var(--hair-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--ink);background:none}
+.hc:first-child{border-left:none}
+.hcab .hc{background:color-mix(in srgb,var(--ink) 8%,var(--surface));
+  font-weight:700;font-size:11px;letter-spacing:.03em;text-transform:uppercase}
+.hcab .hc.rojo{background:var(--c-confi);color:#fff}
+.hc.num{text-align:right;font-family:var(--mono);font-size:12px;letter-spacing:-.02em}
+.hc.vacia{color:var(--ink-3)}
+.htot .hc{background:color-mix(in srgb,#E3B93F 26%,var(--surface));font-weight:700;font-size:11.5px}
+.htot .hc.num{font-size:12.5px}
+input.hc,select.hc{border:none;border-radius:0;width:100%;font-family:inherit;
+  font-size:12.5px;height:30px;padding:0 9px;min-width:0}
+input.hc.num{font-family:var(--mono);font-size:12px}
+select.hc{font-size:11px;font-weight:600;-webkit-appearance:none;appearance:none;cursor:pointer}
+input.hc:focus,select.hc:focus{
+  background:color-mix(in srgb,var(--oro) 13%,var(--surface));
+  box-shadow:inset 0 0 0 2px var(--oro);outline:none;border:none}
+.hadd{grid-column:1/-1;height:30px;line-height:30px;padding:0 9px;text-align:left;
+  font-size:11.5px;color:var(--ink-3);border-top:1px solid var(--hair-2);width:100%}
+@media (hover:hover){.hadd:hover{color:var(--oro);background:var(--wash)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -840,7 +871,7 @@ const colorDe=e=>esNota(e)
 
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
 let modo='mes',pRef=new Date(HOY),filtroG='todos';
-let abierto={gastos:false,impuestos:false,cobros:false,meses:false,detalle:false,deudas:false};
+let abierto={gastos:false,impuestos:false,cobros:false,meses:false,detalle:false};
 
 function rango(){
   const y=pRef.getFullYear(),m=pRef.getMonth();
@@ -1396,43 +1427,53 @@ function renderFin(){
 
   <div class="acc detalle ${abierto.detalle?'on':''}">
     <button class="acc-h" data-acc="detalle">
-      <span class="t">Ingresos y gastos</span><span class="v">${conImp.length}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <span class="t">Planilla</span><span class="v">${conImp.length} trabajos</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <div class="acc-b">
-      ${conImp.length?`<div class="rows tabla">
-        ${[...conImp].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>`
-          <button class="r tap" data-evid="${e.id}">
-            <span class="cel-t">${e.titulo}<small>${e.cliente||'sin cliente'} · ${fcorta(e.fecha)}</small></span>
-            <span class="est" style="background:${estOf(e).hex}">${estOf(e).corto}</span>
-            <b>${eur(e.importe)}</b>
-          </button>`).join('')}
+      <div class="hojas">
+
+        <div class="hoja">
+          <div class="hfila hcab"><div class="hc">Gastos</div><div class="hc num"></div></div>
+          ${gp.map(x=>`<div class="hfila">
+            ${x.tipo==='trabajo'
+              ? `<div class="hc vacia">${x.concepto} · ${x.trabajo}</div><div class="hc num vacia">${Math.round(x.mOcc)}</div>`
+              : `<input class="hc" value="${(x.concepto||'').replace(/"/g,'&quot;')}" data-ed="gasto" data-id="${x.id}" data-campo="concepto">
+                 <input class="hc num" type="number" inputmode="decimal" value="${Math.round(x.mOcc)}" data-ed="gasto" data-id="${x.id}" data-campo="importe"${x.repite||x.esAmort?' readonly title="Se repite todos los meses: se edita desde la lista de gastos"':''}>`}
+          </div>`).join('')}
+          <button class="hadd" data-add="gasto">+</button>
+          <div class="hfila htot"><div class="hc">Total gastos mes</div><div class="hc num">${Math.round(totalG)}</div></div>
+        </div>
+
+        <div class="hoja">
+          <div class="hfila hcab"><div class="hc rojo">Deudas</div><div class="hc num rojo"></div></div>
+          ${[...deudas].sort((a,b)=>(a.pagada?1:0)-(b.pagada?1:0)).map(d=>`<div class="hfila">
+            <input class="hc" value="${(d.concepto||'').replace(/"/g,'&quot;')}" data-ed="deuda" data-id="${d.id}" data-campo="concepto"${d.pagada?' style="text-decoration:line-through;opacity:.45"':''}>
+            <input class="hc num" type="number" inputmode="decimal" value="${Math.round(+d.monto||0)}" data-ed="deuda" data-id="${d.id}" data-campo="monto"${d.pagada?' style="text-decoration:line-through;opacity:.45"':''}>
+          </div>`).join('')}
+          <button class="hadd" data-add="deuda">+</button>
+          <div class="hfila htot"><div class="hc">Nos quedaría por pagar</div><div class="hc num">${Math.round(totalDeuda)}</div></div>
+        </div>
+
       </div>
-      <div class="rows" style="margin-top:12px">
-        <div class="r"><span>Total ingresos<small>todo lo cargado, cobrado o no</small></span><b>${eur(baseF+baseN)}</b></div>
-        <div class="r"><span>Ya cobrado<small>real, en la cuenta</small></span><b style="color:var(--c-cobra)">${eur(totalIng)}</b></div>
-        <div class="r"><span>Pendiente de cobro</span><b style="color:var(--c-confi)">${eur(porCobrar)}</b></div>
-        <div class="r"><span>Total gastos</span><b>− ${eur(totalG)}</b></div>
-        <div class="r tot"><span>Ahorro del mes<small>ingresos menos gastos</small></span><b style="color:${(baseF+baseN-totalG)>=0?'var(--c-cobra)':'var(--neg)'}">${eur(baseF+baseN-totalG)}</b></div>
-        <div class="r tot"><span>Total de ahorros<small>acumulado desde el principio</small></span><b style="color:${ahorroAcum>=0?'var(--c-cobra)':'var(--neg)'}">${eur(ahorroAcum)}</b></div>
-      </div>`
-      :`<div class="sinDatos">No hay trabajos con importe en este período.</div>`}
+
+      <div class="hoja hoja-ancha" style="margin-top:14px">
+        <div class="hfila hcab tres"><div class="hc">Ingresos</div><div class="hc num"></div><div class="hc">Estado</div></div>
+        ${[...conImp].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>`<div class="hfila tres">
+          <input class="hc" value="${(e.titulo||'').replace(/"/g,'&quot;')}" data-ed="ev" data-id="${e.id}" data-campo="titulo">
+          <input class="hc num" type="number" inputmode="decimal" value="${Math.round(+e.importe||0)}" data-ed="ev" data-id="${e.id}" data-campo="importe">
+          <select class="hc" data-ed="ev" data-id="${e.id}" data-campo="estado" style="color:${estOf(e).hex}">
+            ${Object.entries(ESTADOS).map(([k,v])=>`<option value="${k}"${e.estado===k?' selected':''}>${v.corto}</option>`).join('')}
+          </select>
+        </div>`).join('')}
+        <button class="hadd" data-add="ev">+</button>
+        <div class="hfila htot"><div class="hc">Total ingresos</div><div class="hc num">${Math.round(baseF+baseN)}</div></div>
+        <div class="hfila htot"><div class="hc">Total ya cobrado (real)</div><div class="hc num">${Math.round(totalIng)}</div></div>
+        <div class="hfila htot"><div class="hc">Total pendiente de cobro</div><div class="hc num">${Math.round(porCobrar)}</div></div>
+        <div class="hfila htot"><div class="hc">Ahorro mes</div><div class="hc num">${Math.round(baseF+baseN-totalG)}</div></div>
+        <div class="hfila htot"><div class="hc">Total de ahorros</div><div class="hc num">${Math.round(ahorroAcum)}</div></div>
+      </div>
     </div>
   </div>
 
-  <div class="acc deudas ${abierto.deudas?'on':''}">
-    <button class="acc-h" data-acc="deudas">
-      <span class="t">Deudas</span><span class="v" style="color:${totalDeuda?'var(--c-confi)':'var(--ink-2)'}">${eur(totalDeuda)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
-    <div class="acc-b">
-      ${deudas.length?`<div class="rows">
-        ${[...deudas].sort((a,b)=>(a.pagada?1:0)-(b.pagada?1:0)).map(d=>`
-          <button class="r tap" data-deuda="${d.id}">
-            <span class="cel-t">${d.concepto||'Sin concepto'}${d.pagada?'<small>ya pagada</small>':d.nota?`<small>${d.nota}</small>`:''}</span>
-            <b style="${d.pagada?'text-decoration:line-through;opacity:.45':'color:var(--c-confi)'}">${eur(d.monto)}</b>
-          </button>`).join('')}
-        <div class="r tot"><span>Nos quedaría por pagar</span><b style="color:var(--c-confi)">${eur(totalDeuda)}</b></div>
-      </div>`:`<div class="sinDatos">No hay deudas cargadas.</div>`}
-      <button class="addbig" id="addDeuda">+ Añadir deuda</button>
-    </div>
-  </div>
 `;
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
@@ -1444,9 +1485,23 @@ function renderFin(){
     const k=b.dataset.acc; abierto[k]=!abierto[k]; renderFin();
   });
   fin.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{filtroG=b.dataset.fg;vistaGastos()});
-  const ad=document.getElementById('addDeuda');
-  if(ad)ad.onclick=()=>{editando=null;editarDeuda(null)};
-  fin.querySelectorAll('[data-deuda]').forEach(b=>b.onclick=()=>editarDeuda(b.dataset.deuda));
+  // edición en línea de la planilla
+  fin.querySelectorAll('[data-ed]').forEach(el=>{
+    el.onchange=async()=>{
+      const t=el.dataset.ed, id=el.dataset.id, campo=el.dataset.campo;
+      let val=el.value;
+      if(campo==='importe'||campo==='monto')val=+val||0;
+      if(t==='ev'){const e=eventos.find(x=>String(x.id)===id); if(e)await persistirEvento({...e,[campo]:val})}
+      if(t==='deuda'){const d=deudas.find(x=>String(x.id)===id); if(d)await persistirDeuda({...d,[campo]:val})}
+      if(t==='gasto'){const g=gastos.find(x=>String(x.id)===id); if(g)await persistirGasto({...g,[campo]:val})}
+    };
+  });
+  fin.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+    const t=b.dataset.add; editando=null;
+    if(t==='ev'){sel=new Date(pRef);abrirEvento(null,'trabajo')}
+    if(t==='deuda')editarDeuda(null);
+    if(t==='gasto')editarGasto(null,true);
+  });
 }
 function moverP(d){
   if(modo==='mes')pRef.setMonth(pRef.getMonth()+d);
@@ -1683,7 +1738,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v36 · 19 sept</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v39 · 19 sept</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const ce=document.getElementById('cfgEst');
@@ -1895,6 +1950,8 @@ window.addEventListener('resize',cerrarMenu);
 
 async function persistirDeuda(d){await DB.guardarDeuda(d)}
 async function borrarDeudaApp(id){await DB.borrarDeuda(id)}
+
+async function persistirGasto(g){await DB.guardarGasto(g)}
 
 /* ── deudas: lo que él debe, aparte de los gastos del negocio ── */
 function editarDeuda(id){
