@@ -20,7 +20,7 @@
   --paper:#EFEEEA; --surface:#FFFFFF; --ink:#16171A; --ink-2:#63656A; --ink-3:#9C9D97;
   --hair:#D8D7D1; --hair-2:#E8E7E2; --wash:#F6F5F2;
   --oro:#9C7C33;
-  --c-confi:#AF4034; --c-entre:#B08D1C; --c-cobra:#4E6B41;
+  --c-confi:#AF4034; --c-proc:#B39B0A; --c-entre:#C25E15; --c-cobra:#4E6B41;
   --p-efec:#6B7A4C; --neg:#AF5A4E;
   --chip-tx:#FFFFFF; --raya:#F4F3EE; --sombra:rgba(22,23,26,.20); --velo:rgba(22,23,26,.40);
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
@@ -31,7 +31,7 @@
   --paper:#141513; --surface:#1E1F1C; --ink:#EDECE8; --ink-2:#9A9B95; --ink-3:#6B6C66;
   --hair:#33342F; --hair-2:#262723; --wash:#232420;
   --oro:#C9A96A;
-  --c-confi:#C7564A; --c-entre:#D9B93F; --c-cobra:#6E9159;
+  --c-confi:#C7564A; --c-proc:#D9C245; --c-entre:#DE8A3C; --c-cobra:#6E9159;
   --p-efec:#88976A; --neg:#C4655A;
   --chip-tx:#14150F; --raya:#24261F; --sombra:rgba(0,0,0,.5); --velo:rgba(0,0,0,.58);
 }
@@ -307,7 +307,13 @@ button svg,.picker svg,.tabbar svg{flex:none}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;letter-spacing:-.01em;
   font-weight:500}
 .chip.libre{background:none;color:var(--ink-3);border:1px dashed var(--hair);font-weight:400}
-.mas{font-family:var(--mono);font-size:8px;color:var(--ink-3);padding-left:3px;text-align:left}
+.mas{display:block;font-family:var(--mono);font-size:8.5px;color:var(--ink-3);
+  padding:3px 4px;text-align:left;width:100%;border-radius:3px;margin-top:1px;cursor:pointer}
+.mas:active{background:var(--wash);color:var(--oro)}
+@media (hover:hover){.mas:hover{background:var(--wash);color:var(--oro)}}
+.mc.abierta{box-shadow:0 0 0 1px var(--oro),0 6px 18px var(--sombra);z-index:3;position:relative}
+/* si hay un día desplegado, las filas crecen en vez de recortar */
+.mcells.hay-abierta{grid-auto-rows:minmax(118px,auto)!important;flex:none!important}
 .mcells{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 /* barra de meses */
 .mespills{display:flex;gap:6px;overflow-x:auto;padding:11px 12px 9px;scrollbar-width:none}
@@ -780,9 +786,10 @@ let IRPF_P=.15;
    Es el código que él ya usa en su Google Calendar. */
 /* Semáforo: rojo pendiente · amarillo hecho pero sin cobrar · verde cerrado */
 const ESTADOS={
-  confirmado:{lbl:'Por hacer',        corto:'Por hacer',    hex:'#AF4034'},
-  entregado: {lbl:'Hecho · falta cobrar', corto:'Falta cobrar', hex:'#B08D1C'},
-  cobrado:   {lbl:'Cobrado',          corto:'Cobrado',      hex:'#4E6B41'}};
+  confirmado:{lbl:'Por hacer',            corto:'Por hacer',    hex:'#AF4034'},
+  proceso:   {lbl:'En proceso',           corto:'En proceso',   hex:'#B39B0A'},
+  entregado: {lbl:'Hecho · falta cobrar', corto:'Falta cobrar', hex:'#C25E15'},
+  cobrado:   {lbl:'Cobrado',              corto:'Cobrado',      hex:'#4E6B41'}};
 /* los que quedaron con el estado viejo se leen como pendientes */
 const estOf=e=>ESTADOS[e.estado]||ESTADOS.confirmado;
 const COBROS={efectivo:{lbl:'Efectivo',hex:'#88976A'},transferencia:{lbl:'Transfer.',hex:'#5E90C4'},
@@ -809,10 +816,10 @@ const PERIODS={mensual:'cada mes',trimestral:'cada trimestre',anual:'cada año'}
 /* Los colores viven en CSS. Acá solo la copia que necesita el JS
    para pintarlos en línea; cambian al tocar el tema. */
 const PAL={
-  claro:{confi:'#AF4034',entre:'#B08D1C',cobra:'#4E6B41',nota:'#3F6E97',
+  claro:{confi:'#AF4034',proc:'#B39B0A',entre:'#C25E15',cobra:'#4E6B41',nota:'#3F6E97',
     efec:'#6B7A4C',tran:'#3F6E97',bizu:'#7458A8',tarj:'#A87A3C',
     cat:['#AF5A4E','#3F6E97','#7458A8','#A87A3C','#3F8A8A','#4E6B41','#7C7D76','#63656A']},
-  oscuro:{confi:'#C7564A',entre:'#D9B93F',cobra:'#6E9159',nota:'#5E90C4',
+  oscuro:{confi:'#C7564A',proc:'#D9C245',entre:'#DE8A3C',cobra:'#6E9159',nota:'#5E90C4',
     efec:'#88976A',tran:'#5E90C4',bizu:'#9678C4',tarj:'#C39554',
     cat:['#C4655A','#5E90C4','#9678C4','#C39554','#5FA6A6','#6E9159','#8F9089','#9A9B95']}
 };
@@ -823,8 +830,8 @@ function aplicarTema(t){
   try{localStorage.setItem('tema',t)}catch(e){}
   document.documentElement.dataset.tema = t==='oscuro' ? 'oscuro' : '';
   const p=PAL[t]||PAL.claro;
-  ESTADOS.confirmado.hex=p.confi;
-  ESTADOS.entregado.hex=p.entre; ESTADOS.cobrado.hex=p.cobra;
+  ESTADOS.confirmado.hex=p.confi; ESTADOS.proceso.hex=p.proc;
+  ESTADOS.entregado.hex=p.entre;  ESTADOS.cobrado.hex=p.cobra;
   COL_NOTA=p.nota;
   COBROS.efectivo.hex=p.efec; COBROS.transferencia.hex=p.tran;
   COBROS.bizum.hex=p.bizu;    COBROS.tarjeta.hex=p.tarj;
@@ -865,10 +872,15 @@ const esNota=e=>e.tipo==='nota';
 const trabajos=()=>eventos.filter(e=>!esNota(e));   // las notas no son plata
 let COL_NOTA='#3F6E97';   // azul: lo personal, como sus citas
 // los recordatorios también tienen semáforo: rojo por hacer, verde hecho
-const colorDe=e=>esNota(e)
-  ? (e.hecho?ESTADOS.cobrado.hex:ESTADOS.confirmado.hex)
-  : estOf(e).hex;
+// 0 sin hacer · 2 en proceso · 1 hecho
+// Un recordatorio de varios días guarda un estado por día en porDia:
+// así puede estar hecho el martes y pendiente el miércoles.
+const hechoEn=(e,k)=>(k&&e.porDia&&e.porDia[k]!==undefined)?e.porDia[k]:(e.hecho||0);
+const colorNota=(e,k)=>{const h=hechoEn(e,k);
+  return h===1?ESTADOS.cobrado.hex:h===2?ESTADOS.proceso.hex:ESTADOS.confirmado.hex};
+const colorDe=(e,k)=>esNota(e)?colorNota(e,k):estOf(e).hex;
 
+const expandidos=new Set();   // días con la lista desplegada
 let sel=new Date(HOY),tab='cal',vistaCal='mes',diaAbierto=null,editando=null,modoEd='ev',volverA=null;
 let modo='mes',pRef=new Date(HOY),filtroG='todos';
 let abierto={gastos:false,impuestos:false,cobros:false,meses:false,detalle:false};
@@ -918,7 +930,7 @@ function renderStrip(){
     const evs=eventos.filter(e=>enDia(e,k)).slice(0,4);
     out+=`<button class="d ${k===iso(sel)?'sel':''} ${k===iso(HOY)?'hoy':''}" data-f="${k}">
       <span class="dow">${DOW[i]}</span><span class="num">${d.getDate()}</span>
-      <span class="dots">${evs.map(e=>`<i style="background:${colorDe(e)}"></i>`).join('')}</span></button>`;
+      <span class="dots">${evs.map(e=>`<i style="background:${colorDe(e,k)}"></i>`).join('')}</span></button>`;
   }
   strip.innerHTML=out;
 }
@@ -936,7 +948,7 @@ function renderDia(){
   const nc=Math.max(1,cols.length);let lanes='';
   evs.forEach(e=>{
     const nota=esNota(e);
-    const col=colorDe(e);
+    const col=colorDe(e,k);
     const top=(min(e.ini)/60-H0)*HH,hgt=Math.max(38,(min(e.fin)-min(e.ini))/60*HH-3),w=100/nc;
     lanes+=`<div class="ev${nota?' nota':''}" data-id="${e.id}" style="--ec:${col};top:${top}px;height:${hgt}px;left:${e._c*w}%;width:calc(${w}% - 4px);${nota?'':`background:color-mix(in srgb,${col} 17%,var(--surface))`}">
       <div class="t">${e.titulo}</div><div class="c">${nota?(e.lugar||'nota'):e.cliente+(e.lugar?' · '+e.lugar:'')}</div>
@@ -945,7 +957,7 @@ function renderDia(){
 
   const banda=alldia.length
     ? `<div class="todod">${alldia.map(e=>`<button data-id="${e.id}">
-        <span class="dd" style="background:${colorDe(e)}"></span>
+        <span class="dd" style="background:${colorDe(e,k)}"></span>
         <span class="tt">${e.titulo}</span>
         ${varios(e)?`<span class="rango">día ${Math.round((fromIso(k)-fromIso(e.fecha))/86400000)+1}/${dias(e)}</span>`:''}
         ${!esNota(e)&&e.importe?`<span class="mm">${eur(e.importe)}</span>`:''}
@@ -972,11 +984,16 @@ function renderMes(){
     const evs=eventos.filter(e=>enDia(e,k))
       .sort((a,b)=>(sinHora(b)?1:0)-(sinHora(a)?1:0)||min(a.ini)-min(b.ini));
     const tot=evs.reduce((s,e)=>s+((esNota(e)||e.fecha!==k)?0:+e.importe||0),0);
-    const chips=evs.slice(0,MAXCHIPS).map(e=>
-      `<span class="chip" data-id="${e.id}" style="background:${colorDe(e)}">${e.titulo}</span>`).join('');
-    const mas=evs.length>MAXCHIPS?`<span class="mas">+${evs.length-MAXCHIPS}</span>`:'';
+    const desplegado=expandidos.has(k);
+    const visibles=desplegado?evs:evs.slice(0,MAXCHIPS);
+    const chips=visibles.map(e=>
+      `<span class="chip" data-id="${e.id}" style="background:${colorDe(e,k)}">${e.titulo}</span>`).join('');
+    // span y no button: un <button> dentro de otro <button> rompe la celda
+    const mas=evs.length>MAXCHIPS
+      ? `<span class="mas" role="button" tabindex="0" data-mas="${k}">${desplegado?'− menos':'+'+(evs.length-MAXCHIPS)+' más'}</span>`
+      : '';
     const num=tot?(tot>=1000?(tot/1000).toFixed(1).replace('.',',')+'k':tot):'';
-    cells+=`<button class="mc ${off?'off':''} ${k===iso(HOY)?'hoy':''} ${k===iso(sel)&&diaAbierto?'sel':''}" data-f="${k}">
+    cells+=`<button class="mc ${off?'off':''} ${k===iso(HOY)?'hoy':''} ${k===iso(sel)&&diaAbierto?'sel':''} ${desplegado?'abierta':''}" data-f="${k}">
       <span class="mh"><span class="mn">${d.getDate()}</span>${num?`<span class="mtot">${num}</span>`:''}</span>
       ${chips}${mas}</button>`;
     if(i>=34&&d.getMonth()!==m&&i%7===6)break;
@@ -999,21 +1016,21 @@ function renderMes(){
     preview=`<div class="pv">
       <div class="pv-h"><span class="t">${dia}</span><span class="s">${resumen}</span></div>
       ${evs.length?`<div class="rows">${evs.map(e=>`<button class="pv-row" data-evid="${e.id}">
-        <span class="dot" style="background:${colorDe(e)}"></span>
+        <span class="dot" style="background:${colorDe(e,k)}"></span>
         <span class="h">${sinHora(e)?'—':e.ini}</span>
         <span class="nm"><b>${e.titulo}</b><small>${esNota(e)?(e.lugar||'nota'):(e.cliente||'')+(e.lugar?' · '+e.lugar:'')}</small></span>
         <span class="am">${!esNota(e)&&e.importe?eur(e.importe):''}</span></button>`).join('')}</div>`:''}
     </div>`;
   }
 
-  mesgrid.innerHTML=`<div class="mdow">${DOW.map(x=>`<span>${x}</span>`).join('')}</div><div class="mcells">${cells}</div>`+preview;
+  mesgrid.innerHTML=`<div class="mdow">${DOW.map(x=>`<span>${x}</span>`).join('')}</div><div class="mcells${expandidos.size?' hay-abierta':''}">${cells}</div>`+preview;
 
   // barra de meses
   mespills.innerHTML=MESES.map((n,i)=>
     `<button data-m="${i}" class="${i===m?'on':''}">${n.slice(0,3)}</button>`).join('')
     +`<span class="anio">${y}</span>`;
   mespills.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
-    sel=new Date(y,+b.dataset.m,1);diaAbierto=null;render();
+    sel=new Date(y,+b.dataset.m,1);diaAbierto=null;expandidos.clear();render();
     });
   const act=mespills.querySelector('.on');
   if(act)mespills.scrollLeft=Math.max(0,act.offsetLeft-90);
@@ -1267,6 +1284,43 @@ function leerGasto(){
   if(q('gAnios'))editando.anios=Math.min(15,Math.max(1,+q('gAnios').value||5));
 }
 
+
+/* ══════════════════════════════════════════════════════════
+   Impuestos de un período. Una sola función para que la ficha
+   de cada trabajo y Finanzas no den números distintos.
+   ══════════════════════════════════════════════════════════ */
+function impuestosDe(rango){
+  const evs=trabajos().filter(e=>enRango(e,rango)&&+e.importe>0);
+  const fact=evs.filter(e=>e.factura);
+  const baseF=fact.reduce((s,e)=>s+(+e.importe||0),0);
+  const gpr=gastosPeriodo(rango);
+
+  const ivaRep=baseF*IVA_P;
+  const ivaSop=gpr.filter(g=>g.factura).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0)*IVA_P;
+  const ivaPagar=ivaRep-ivaSop;
+
+  const gastoDed=gpr.filter(dedIrpf).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0);
+  const rendim=baseF-gastoDed;
+  const retenido=fact.filter(e=>cliDe(e.cliente)?.tipo==='empresa')
+    .reduce((s,e)=>s+e.importe*IRPF_P,0);
+  const irpfEst=Math.max(0,rendim)*IRPF_EST;
+  const irpfFalta=Math.max(0,irpfEst-retenido);
+
+  // el modelo 130 tiene su propio tipo legal: 20 % del rendimiento
+  const m130=Math.max(0,rendim*.20-retenido);
+  const conRet=fact.filter(e=>cliDe(e.cliente)?.tipo==='empresa')
+    .reduce((s,e)=>s+e.importe,0);
+  const pctRet=baseF?conRet/baseF:0;
+
+  return {baseF,ivaRep,ivaSop,ivaPagar,gastoDed,rendim,retenido,irpfEst,irpfFalta,
+          m130,pctRet,exento130:pctRet>=0.7,
+          apartar:Math.max(0,ivaPagar)+irpfFalta};
+}
+function trimestreDe(d){
+  const y=d.getFullYear(), q=Math.floor(d.getMonth()/3);
+  return {a:new Date(y,q*3,1), b:new Date(y,q*3+3,0), n:q+1, y};
+}
+
 /* ── finanzas ── */
 function renderFin(){
   const r=rango(),evs=trabajos().filter(e=>enRango(e,r)),conImp=evs.filter(e=>+e.importe>0);
@@ -1292,15 +1346,9 @@ function renderFin(){
   const sumG=a=>a.reduce((s,g)=>s+g.mOcc,0);
   const totalG=sumG(gp), quedo=totalIng-totalG;
 
-  const ivaRep=baseF*IVA_P;
-  const ivaSop=gp.filter(g=>g.factura).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0)*IVA_P;
-  const a303=ivaRep-ivaSop;
-  const gastoDed=gp.filter(dedIrpf).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0);
-  const retIrpf=fact.filter(e=>cliDe(e.cliente)?.tipo==='empresa').reduce((s,e)=>s+e.importe*IRPF_P,0);
-  const rendim=baseF-gastoDed, a130=Math.max(0,rendim*.20-retIrpf);
-  // si más del 70 % de lo facturado lleva retención, no toca presentar el 130
-  const conRet=fact.filter(e=>cliDe(e.cliente)?.tipo==='empresa').reduce((s,e)=>s+e.importe,0);
-  const pctRet=baseF?conRet/baseF:0, exento130=pctRet>=0.7;
+  const imp=impuestosDe(r);
+  const tri=trimestreDe(pRef);
+  const impT=impuestosDe(tri);
 
   const porCobro={};Object.keys(COBROS).forEach(k=>porCobro[k]=0);
   let sinVia=0;
@@ -1389,20 +1437,26 @@ function renderFin(){
 
   <div class="acc ${abierto.impuestos?'on':''}">
     <button class="acc-h" data-acc="impuestos">
-      <span class="t">Impuestos</span><span class="v">${eur2(a303)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <span class="t">Impuestos</span><span class="v">${eur2(imp.apartar)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <div class="acc-b">
       <div class="rows">
-        <div class="r"><span>Base facturada</span><b>${eur2(baseF)}</b></div>
-        <div class="r"><span>IVA repercutido <small>${Math.round(IVA_P*100)} %</small></span><b>${eur2(ivaRep)}</b></div>
-        <div class="r"><span>IVA soportado <small>gastos con factura</small></span><b>−${eur2(ivaSop)}</b></div>
-        <div class="r tot"><span>IVA a pagar (303)</span><b>${eur2(a303)}</b></div></div>
+        <div class="r"><span>Base facturada</span><b>${eur2(imp.baseF)}</b></div>
+        <div class="r"><span>IVA repercutido <small>${Math.round(IVA_P*100)} % de lo facturado</small></span><b>${eur2(imp.ivaRep)}</b></div>
+        <div class="r"><span>IVA soportado <small>gastos con factura</small></span><b>−${eur2(imp.ivaSop)}</b></div>
+        <div class="r tot"><span>${imp.ivaPagar>=0?'IVA a pagar':'IVA a devolver'}</span><b>${eur2(Math.abs(imp.ivaPagar))}</b></div></div>
       <div class="rows" style="margin-top:9px">
-        <div class="r"><span>Gastos deducibles</span><b>${eur2(gastoDed)}</b></div>
-        <div class="r"><span>Rendimiento neto</span><b>${eur2(rendim)}</b></div>
-        <div class="r"><span>IRPF ya retenido <small>${Math.round(IRPF_P*100)} % en facturas a empresa</small></span><b>${eur2(retIrpf)}</b></div>
-        <div class="r tot"><span>IRPF a pagar (130)</span><b>${exento130?'0,00 € · exento':eur2(a130)}</b></div></div>
-      ${exento130?`<div class="note">El ${Math.round(pctRet*100)} % de lo que facturaste lleva retención. Como pasa el 70 %, este trimestre no te toca presentar el modelo 130.</div>`:''}
-      ${baseN?`<div class="note">Estos números salen solo de los ${eur(baseF)} facturados. Los ${eur(baseN)} sin factura quedan fuera del cálculo y aparecen aparte, arriba.</div>`:''}
+        <div class="r"><span>Gastos deducibles</span><b>${eur2(imp.gastoDed)}</b></div>
+        <div class="r"><span>Rendimiento neto <small>lo facturado menos los gastos</small></span><b>${eur2(imp.rendim)}</b></div>
+        <div class="r"><span>IRPF estimado <small>${Math.round(IRPF_EST*100)} % del rendimiento</small></span><b>${eur2(imp.irpfEst)}</b></div>
+        <div class="r"><span>Ya retenido en facturas <small>${Math.round(IRPF_P*100)} % a clientes empresa</small></span><b>−${eur2(imp.retenido)}</b></div>
+        <div class="r tot"><span>IRPF que falta apartar</span><b>${eur2(imp.irpfFalta)}</b></div></div>
+      <div class="rows" style="margin-top:9px">
+        <div class="r tot"><span>Total a apartar<small>${r.lbl}</small></span><b>${eur2(imp.apartar)}</b></div></div>
+      ${modo!=='trim'?`<div class="note">Los modelos 303 y 130 se presentan por trimestre. En el ${tri.n}º trimestre de ${tri.y} llevás <b>${eur2(impT.apartar)}</b> para apartar.</div>`:''}
+      ${impT.exento130
+        ? `<div class="note">El ${Math.round(impT.pctRet*100)} % de lo que facturaste en el trimestre lleva retención. Como pasa el 70 %, no te toca presentar el modelo 130.</div>`
+        : `<div class="note">Modelo 130 del trimestre: ${eur2(impT.m130)}. Se calcula con el 20 % legal, no con tu IRPF estimado.</div>`}
+      ${baseN?`<div class="note">Estos números salen solo de lo facturado. Los ${eur(baseN)} sin factura quedan fuera y aparecen aparte, arriba.</div>`:''}
     </div>
   </div>
 
@@ -1569,7 +1623,7 @@ function pintarEvento(){
   const tuyo=imp-g-irpfEst;
 
   const bloqueTrabajo = `
-  <div class="f"><label>Estado</label><div class="seg seg3" id="seg">
+  <div class="f"><label>Estado</label><div class="seg seg4" id="seg">
     ${Object.entries(ESTADOS).map(([k,v])=>`<button data-e="${k}" class="${e.estado===k?'on':''}" style="--sc:${v.hex}"><i style="background:${v.hex}"></i>${v.corto}</button>`).join('')}
   </div></div>
   <div class="f f2">
@@ -1599,7 +1653,8 @@ function pintarEvento(){
   <div class="calc" style="margin-top:10px">
     <div class="r tot"><span>Tuyo, después de IRPF</span><b>${eur2(tuyo)}</b></div>
   </div>
-  <div class="note">De los ${eur(imp+iva-irpf)} que te entran, apartá ${eur(apartar)} para Hacienda${g?` y ${eur(gastoReal)} ya se fueron en gastos`:``}. Te quedan limpios ${eur(tuyo)}.</div>`
+  <div class="note">De los ${eur(imp+iva-irpf)} que te entran, apartá ${eur(apartar)} para Hacienda${g?` y ${eur(gastoReal)} ya se fueron en gastos`:``}. Te quedan limpios ${eur(tuyo)}.</div>
+  <div class="note" style="margin-top:8px">Es una estimación de este trabajo solo. El número que manda es el de Finanzas → Impuestos, que junta todo el trimestre y descuenta los gastos fijos.</div>`
   :`<div class="calc" style="margin-top:10px">
     <div class="r tot"><span>Te queda</span><b>${eur2(imp-g)}</b></div>
   </div>`}
@@ -1637,10 +1692,11 @@ function pintarEvento(){
       ${Object.entries(AVISOS).map(([m,t])=>`<option value="${m}" ${String(e.aviso||30)===m?'selected':''}>${t}</option>`).join('')}
     </select>
   </div>
-  ${esNota?`<div class="f"><label>Estado</label><div class="seg seg2" id="segNota">
+  ${esNota?`<div class="f"><label>Estado</label><div class="seg seg3" id="segNota">
       <button data-n="0" class="${!e.hecho?'on':''}" style="--sc:${ESTADOS.confirmado.hex}"><i style="background:${ESTADOS.confirmado.hex}"></i>Sin hacer</button>
-      <button data-n="1" class="${e.hecho?'on':''}" style="--sc:${ESTADOS.cobrado.hex}"><i style="background:${ESTADOS.cobrado.hex}"></i>Hecho</button>
-    </div></div>
+      <button data-n="2" class="${e.hecho===2?'on':''}" style="--sc:${ESTADOS.proceso.hex}"><i style="background:${ESTADOS.proceso.hex}"></i>En proceso</button>
+      <button data-n="1" class="${e.hecho===1?'on':''}" style="--sc:${ESTADOS.cobrado.hex}"><i style="background:${ESTADOS.cobrado.hex}"></i>Hecho</button>
+    </div>${dias(e)>1?`<div class="note">Esto aplica a los ${dias(e)} días. Para marcar un día suelto, botón derecho sobre ese día en el calendario.</div>`:''}</div>
     <button class="conv" id="convertir">+ Añadir cliente e importe</button>`:bloqueTrabajo}
   ${e.id?`<button class="del" id="borrar">Eliminar</button>`:''}`;
 
@@ -1649,7 +1705,8 @@ function pintarEvento(){
     editando.estado='confirmado';editando.factura=1;pintarEvento()};
   tDia.onclick=()=>{leerEv();editando.todoDia=editando.todoDia?0:1;pintarEvento()};
   const sn=document.getElementById('segNota');
-  if(sn)sn.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();editando.hecho=+b.dataset.n;pintarEvento()});
+  if(sn)sn.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();
+    editando.hecho=+b.dataset.n;editando.porDia=null;pintarEvento()});
   shBody.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>abrirHoras(b.dataset.h));
   // mover el inicio arrastra el final, nunca al revés
   const fI=document.getElementById('fecha'), fF=document.getElementById('fechaFin');
@@ -1738,7 +1795,7 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v39 · 19 sept</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v45 · 25 sept</div>`;
   const ci=document.getElementById('cfgIva');
   if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
   const ce=document.getElementById('cfgEst');
@@ -1753,16 +1810,20 @@ async function persistirEvento(e){await DB.guardarEvento(e)}
 async function borrarEventoApp(id){await DB.borrarEvento(id)}
 
 /* ── menú contextual: cambiar estado sin abrir la ficha ── */
-let menuEv=null, pulsando=null, hubopulso=false;
+let menuEv=null, menuDia=null, pulsando=null, hubopulso=false;
 
-function abrirMenu(x,y,id){
+function abrirMenu(x,y,id,fecha){
   const e=eventos.find(v=>String(v.id)===String(id));
   if(!e)return;
-  menuEv=e;
+  menuEv=e; menuDia=fecha||iso(sel);
+  const variosDias=varios(e);
+  const hActual=hechoEn(e,menuDia);
   menu.innerHTML = esNota(e)
-    ? `<div class="mt">Recordatorio</div>
-       <button data-a="nota:0" class="${!e.hecho?'on':''}"><i style="background:${ESTADOS.confirmado.hex}"></i>Sin hacer</button>
-       <button data-a="nota:1" class="${e.hecho?'on':''}"><i style="background:${ESTADOS.cobrado.hex}"></i>Hecho</button>
+    ? `<div class="mt">Recordatorio${variosDias?' · '+fcorta(menuDia):''}</div>
+       <button data-a="nota:0" class="${hActual===0?'on':''}"><i style="background:${ESTADOS.confirmado.hex}"></i>Sin hacer</button>
+       <button data-a="nota:2" class="${hActual===2?'on':''}"><i style="background:${ESTADOS.proceso.hex}"></i>En proceso</button>
+       <button data-a="nota:1" class="${hActual===1?'on':''}"><i style="background:${ESTADOS.cobrado.hex}"></i>Hecho</button>
+       ${variosDias?`<div class="mt" style="padding-top:2px">Solo este día. Para todos, abrilo.</div>`:''}
        <div class="sep"></div>
        <button data-a="abrir">Abrir</button>
        <button data-a="trabajo">Convertirlo en trabajo</button>
@@ -1791,7 +1852,14 @@ menu.onclick=async e=>{
     const n={...ev,tipo:'trabajo',todoDia:0,estado:'confirmado',factura:1};
     await persistirEvento(n);return;
   }
-  if(a.startsWith('nota:')){await persistirEvento({...ev,hecho:+a.slice(5)});return}
+  if(a.startsWith('nota:')){
+    const v=+a.slice(5);
+    if(varios(ev)){                       // varios días: solo el que se tocó
+      const porDia={...(ev.porDia||{})}; porDia[menuDia]=v;
+      await persistirEvento({...ev,porDia});
+    }else await persistirEvento({...ev,hecho:v});
+    return;
+  }
   if(a.startsWith('est:')){
     await persistirEvento({...ev,estado:a.slice(4)});
   }
@@ -1811,6 +1879,11 @@ let noAbrir=false;     // para que al soltar no se abra la ficha
 
 const UMBRAL=6;        // píxeles antes de considerar que se está moviendo
 
+// de qué día salió el click: la celda del mes, o el día que se esté viendo
+function diaDe(el){
+  const c=el&&el.closest?el.closest('[data-f]'):null;
+  return c?c.dataset.f:iso(sel);
+}
 function esArrastrable(t){
   return t && t.classList.contains('chip') && t.dataset.id;
 }
@@ -1860,7 +1933,14 @@ async function soltar(){
     g.style.opacity='0';
     const dias=Math.round((fromIso(nueva)-fromIso(ev.fecha))/86400000);
     const fin=new Date(fromIso(finDe(ev)));fin.setDate(fin.getDate()+dias);
-    await persistirEvento({...ev,fecha:nueva,fechaFin:iso(fin)});
+    let porDia;
+    if(ev.porDia){                         // los días marcados viajan con el evento
+      porDia={};
+      Object.entries(ev.porDia).forEach(([f,v])=>{
+        const d=new Date(fromIso(f));d.setDate(d.getDate()+dias);porDia[iso(d)]=v;
+      });
+    }
+    await persistirEvento({...ev,fecha:nueva,fechaFin:iso(fin),...(porDia?{porDia}:{})});
     setTimeout(()=>g.remove(),200);
   }else{
     // vuelve a su sitio
@@ -1895,7 +1975,7 @@ document.addEventListener('pointerdown',e=>{
     pulso.temp=setTimeout(()=>{
       if(!pulso)return;
       pulso.menu=true;noAbrir=true;
-      abrirMenu(pulso.x,pulso.y,id);
+      abrirMenu(pulso.x,pulso.y,id,diaDe(pulso.t));
     },480);
   }
 });
@@ -1919,7 +1999,7 @@ document.addEventListener('pointerup',e=>{
       arr.g.remove();document.body.classList.remove('arrastrando');
       if(arr.destino)arr.destino.classList.remove('drop');
       arr=null;noAbrir=true;
-      abrirMenu(e.clientX,e.clientY,id);
+      abrirMenu(e.clientX,e.clientY,id,diaDe(arr?arr.el:null));
     }else{noAbrir=true;soltar()}
   }
   pulso=null;
@@ -1938,7 +2018,7 @@ document.addEventListener('contextmenu',e=>{
   const t=e.target.closest('[data-id],[data-evid]');
   if(!t)return;
   e.preventDefault();
-  abrirMenu(e.clientX,e.clientY,t.dataset.id||t.dataset.evid);
+  abrirMenu(e.clientX,e.clientY,t.dataset.id||t.dataset.evid,diaDe(t));
 });
 
 /* que arrastrar o mantener apretado no abra además la ficha */
@@ -2058,6 +2138,8 @@ fabGasto.onclick=()=>{editando=null;editarGasto(null,false)};
 
 strip.onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;sel=fromIso(b.dataset.f);render()};
 mesgrid.onclick=e=>{
+  const m=e.target.closest('[data-mas]');
+  if(m){const k=m.dataset.mas;expandidos.has(k)?expandidos.delete(k):expandidos.add(k);renderMes();return}
   const ch=e.target.closest('.chip[data-id]');
   if(ch){abrirEvento(eventos.find(x=>String(x.id)===ch.dataset.id));return}
   const t=e.target.closest('[data-evid]');
@@ -2079,7 +2161,7 @@ btnHoy.onclick=()=>{sel=new Date(HOY);pRef=new Date(HOY);render()};
 prev.onclick=()=>mover(-1);next.onclick=()=>mover(1);
 function mover(d){
   if(vistaCal==='dia')sel.setDate(sel.getDate()+d);
-  else {sel.setMonth(sel.getMonth()+d);diaAbierto=null}
+  else {sel.setMonth(sel.getMonth()+d);diaAbierto=null;expandidos.clear()}
   sel=new Date(sel);render();
 }
 
