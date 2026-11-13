@@ -693,6 +693,17 @@ body.arrastrando .chip{cursor:grabbing}
 .hcab .hc{background:color-mix(in srgb,var(--ink) 8%,var(--surface));
   font-weight:700;font-size:11px;letter-spacing:.03em;text-transform:uppercase}
 .hcab .hc.rojo{background:var(--c-confi);color:#fff}
+.hcab .hc.verde{background:#5FA84A;color:#fff}
+.himp .hc{background:color-mix(in srgb,#E3B93F 14%,var(--surface));font-weight:700;font-size:11.5px}
+.himp .hc small{font-weight:400;color:var(--ink-3);font-size:10.5px}
+.htot .hc small{font-weight:400;color:var(--ink-3);font-size:10.5px}
+.impbox{margin-top:14px;border:1px solid var(--hair);background:var(--surface);padding:10px 12px;border-radius:4px}
+.impbox .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.ib-fila{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;font-size:13px}
+.ib-fila small{display:block;font-size:11px;color:var(--ink-3);margin-top:1px}
+.ib-fila b{font-family:var(--mono);font-size:15px;white-space:nowrap}
+.ib-fila.tot{border-top:1px solid var(--hair-2);padding-top:8px}
+.ib-fila.tot b{color:var(--c-confi)}
 .hc.num{text-align:right;font-family:var(--mono);font-size:12px;letter-spacing:-.02em}
 .hc.vacia{color:var(--ink-3)}
 .htot .hc{background:color-mix(in srgb,#E3B93F 26%,var(--surface));font-weight:700;font-size:11.5px}
@@ -780,7 +791,17 @@ let IVA_P=.21;
 let IRPF_EST=.20;
 // Retención de IRPF en factura. Se cambia desde Finanzas → Ajustes.
 // Tipo general.
-let IRPF_P=.15;
+let IRPF_P=.07;   // nuevo autónomo: 7 % (así salen tus facturas)
+try{const a=JSON.parse(localStorage.getItem('ajustesFin')||'{}');
+  if(a.iva!=null)IVA_P=a.iva; if(a.est!=null)IRPF_EST=a.est; if(a.ret!=null)IRPF_P=a.ret;
+}catch(e){}
+function guardarAjustes(){try{localStorage.setItem('ajustesFin',
+  JSON.stringify({iva:IVA_P,est:IRPF_EST,ret:IRPF_P}))}catch(e){}}
+/* Regla de Joaco: todo lo que va con factura lleva IVA y retención de IRPF.
+   Lo que se cobra en efectivo va sin factura y sin impuestos. */
+// Solo empresas y profesionales retienen IRPF; a un particular no se le retiene.
+// Si el cliente no está marcado, se asume empresa, que es lo habitual en sus facturas.
+function retiene(c){return !c || c.tipo!=='particular'}
 
 /* Verde = hecho y cobrado · Rojo = pendiente · Azul = personal.
    Es el código que él ya usa en su Google Calendar. */
@@ -810,7 +831,12 @@ const CATS={
   'Equipo':    {hex:'#6E9159', pre:{concepto:'', factura:1, repite:0, deduc:100}},
   'Transporte':{hex:'#8F9089', pre:{concepto:'', factura:1, repite:0, deduc:50}},
   'Otros':     {hex:'#9A9B95', pre:{concepto:'', factura:1, repite:0, deduc:100}},
+  'Casa':      {hex:'#B07A8C', pre:{concepto:'', factura:0, repite:1, period:'mensual', deduc:0, ambito:'casa'}},
 };
+/* gastos de casa: cuentan para lo que te queda, nunca para impuestos */
+const esCasa=g=>g.ambito==='casa'||g.cat==='Casa';
+/* lo que sale de verdad del bolsillo: con factura del negocio se paga también el IVA */
+const gReal=g=>g.mOcc+((g.factura&&!esCasa(g))?g.mOcc*IVA_P:0);
 const PERIODS={mensual:'cada mes',trimestral:'cada trimestre',anual:'cada año'};
 
 /* Los colores viven en CSS. Acá solo la copia que necesita el JS
@@ -818,10 +844,10 @@ const PERIODS={mensual:'cada mes',trimestral:'cada trimestre',anual:'cada año'}
 const PAL={
   claro:{confi:'#AF4034',proc:'#B39B0A',entre:'#C25E15',cobra:'#4E6B41',nota:'#3F6E97',
     efec:'#6B7A4C',tran:'#3F6E97',bizu:'#7458A8',tarj:'#A87A3C',
-    cat:['#AF5A4E','#3F6E97','#7458A8','#A87A3C','#3F8A8A','#4E6B41','#7C7D76','#63656A']},
+    cat:['#AF5A4E','#3F6E97','#7458A8','#A87A3C','#3F8A8A','#4E6B41','#7C7D76','#63656A','#9A6577']},
   oscuro:{confi:'#C7564A',proc:'#D9C245',entre:'#DE8A3C',cobra:'#6E9159',nota:'#5E90C4',
     efec:'#88976A',tran:'#5E90C4',bizu:'#9678C4',tarj:'#C39554',
-    cat:['#C4655A','#5E90C4','#9678C4','#C39554','#5FA6A6','#6E9159','#8F9089','#9A9B95']}
+    cat:['#C4655A','#5E90C4','#9678C4','#C39554','#5FA6A6','#6E9159','#8F9089','#9A9B95','#B07A8C']}
 };
 let tema='claro';
 try{tema=localStorage.getItem('tema')||'claro'}catch(e){}
@@ -870,6 +896,16 @@ const inic=n=>(n||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('
 const fcorta=s=>fromIso(s).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
 const esNota=e=>e.tipo==='nota';
 const trabajos=()=>eventos.filter(e=>!esNota(e));   // las notas no son plata
+/* un presupuesto todavía no es plata */
+const esIngreso=e=>+e.importe>0&&e.estado!=='presupuestado';
+/* el cobro cuenta el día que entró la plata, no el día del trabajo */
+const fCobro=e=>e.fechaCobro||e.fecha;
+function conEstado(e,est){
+  const o={...e,estado:est};
+  if(est==='cobrado'&&!o.fechaCobro)o.fechaCobro=iso(HOY);
+  if(est!=='cobrado')o.fechaCobro=null;
+  return o;
+}
 let COL_NOTA='#3F6E97';   // azul: lo personal, como sus citas
 // los recordatorios también tienen semáforo: rojo por hacer, verde hecho
 // 0 sin hacer · 2 en proceso · 1 hecho
@@ -892,6 +928,7 @@ function rango(){
   return{a:new Date(y,0,1),b:new Date(y,11,31),lbl:`año ${y}`,corto:String(y)};
 }
 const enRango=(e,r)=>{const d=fromIso(e.fecha);return d>=r.a&&d<=r.b};
+const cobradoEn=(e,r)=>{if(e.estado!=='cobrado')return false;const d=fromIso(fCobro(e));return d>=r.a&&d<=r.b};
 
 /* ── ocurrencias de un gasto en un rango ── */
 function ocurrencias(g,r){
@@ -916,11 +953,11 @@ function gastosPeriodo(r){
   const gen=gastos.flatMap(g=>ocurrencias(g,r));
   const deTrab=trabajos().filter(e=>enRango(e,r)).flatMap(e=>(e.gastos||[]).map(x=>({
     id:'t'+e.id+'-'+x.c,concepto:x.c||'Gasto',cat:'Trabajo',importe:+x.m||0,mOcc:+x.m||0,factura:x.iva?1:0,
-    deduc:100,tipo:'trabajo',fOcc:e.fecha,trabajo:e.titulo,evId:e.id})));
+    deduc:100,ambito:'negocio',tipo:'trabajo',fOcc:e.fecha,trabajo:e.titulo,evId:e.id})));
   return [...gen,...deTrab];
 }
 /* deducible en IRPF: con factura, o cuota/seguro (no llevan IVA pero sí se deducen) */
-const dedIrpf=g=>g.factura||g.cat==='Autónomo'||g.cat==='Seguro';
+const dedIrpf=g=>!esCasa(g)&&(g.factura||g.cat==='Autónomo'||g.cat==='Seguro');
 
 /* ── strip / día / mes ── */
 function renderStrip(){
@@ -1150,7 +1187,7 @@ function editarCliente(id){
   <div class="f"><label>Tipo</label><div class="seg seg2" id="cTipo">
     <button data-t="empresa" class="${editando.tipo==='empresa'?'on':''}" style="--sc:#5E90C4">Empresa</button>
     <button data-t="particular" class="${editando.tipo==='particular'?'on':''}" style="--sc:#9678C4">Particular</button></div>
-    <div class="note">El tipo decide la retención: a empresa se le factura con 15 % de IRPF, a particular no.</div></div>
+    </div>
   <div class="f f2"><div><label>NIF / CIF</label><input id="cNif" value="${editando.nif||''}"></div>
     <div><label>Teléfono</label><input id="cTel" value="${editando.tel||''}"></div></div>
   <div class="f"><label>Email</label><input id="cEmail" value="${editando.email||''}"></div>
@@ -1204,7 +1241,7 @@ function editarGasto(id,suelto){
   if(suelto!==undefined)editarGasto._suelto=!!suelto;
   if(!editando||editando.id!==id||modoEd!=='gastoEd'){
     editando=id?JSON.parse(JSON.stringify(gastos.find(x=>x.id===id)))
-      :{id:null,concepto:'',cat:'',importe:'',factura:1,deduc:100,repite:0,period:'mensual',fecha:iso(HOY),amort:0,anios:5};
+      :{id:null,concepto:'',cat:'',importe:'',factura:0,deduc:100,repite:1,period:'mensual',fecha:iso(HOY),amort:0,anios:5,ambito:'casa'};
   }
   modoEd='gastoEd';volverA=editarGasto._suelto?null:'gastos';shSave.style.visibility='visible';
   pintarGasto();abrir();
@@ -1219,7 +1256,11 @@ function pintarGasto(){
     ${Object.entries(CATS).map(([k,v])=>`<button data-c="${k}" class="${g.cat===k?'on':''}" style="--cc:${v.hex}">
       <i class="dot" style="background:${v.hex}"></i>${k}</button>`).join('')}
   </div></div>
-  <div class="f"><label>Importe (sin IVA)</label><input type="number" inputmode="decimal" id="gImporte" value="${g.importe}" placeholder="0"></div>
+  <div class="f"><label>¿De quién es el gasto?</label><div class="seg seg2" id="gAmb">
+    <button data-a="negocio" class="${!esCasa(g)?'on':''}" style="--sc:#5E90C4">Negocio</button>
+    <button data-a="casa" class="${esCasa(g)?'on':''}" style="--sc:#B07A8C">Casa / personal</button></div>
+    <div class="note">${esCasa(g)?'Cuenta para lo que te queda, pero no baja impuestos.':'Si tiene factura, descuenta IVA e IRPF.'}</div></div>
+  <div class="f"><label>${esCasa(g)||!g.factura?'Importe':'Importe (sin IVA)'}</label><input type="number" inputmode="decimal" id="gImporte" value="${g.importe}" placeholder="0"></div>
 
   <div class="swrow" id="swRep"><span class="sl">¿Se repite?
     <small>${g.repite?'Se carga solo '+PERIODS[g.period]:'Gasto puntual, se carga una sola vez'}</small></span>
@@ -1231,8 +1272,8 @@ function pintarGasto(){
     <div><label>Desde</label><input type="date" id="gFecha" value="${g.fecha}"></div></div>`
   :`<div class="f"><label>Fecha</label><input type="date" id="gFecha" value="${g.fecha}"></div>`}
 
-  <div class="chk"><button id="gFac" class="${g.factura?'on':''}"><span class="bx">✓</span>Tengo factura</button></div>
-  ${g.factura?`<div class="swrow" id="swDed"><span class="sl">¿Se deduce entero?
+  ${esCasa(g)?'':`<div class="chk"><button id="gFac" class="${g.factura?'on':''}"><span class="bx">✓</span>Tengo factura</button></div>`}
+  ${g.factura&&!esCasa(g)?`<div class="swrow" id="swDed"><span class="sl">¿Se deduce entero?
     <small>${g.deduc>=100?'Sí, el 100 %':'Solo el '+g.deduc+' % — uso mixto'}</small></span>
     <span class="sw ${g.deduc>=100?'on':''}"></span></div>
     ${g.deduc<100?`<div class="f"><label>Porcentaje deducible</label>
@@ -1246,7 +1287,8 @@ function pintarGasto(){
 
   <div class="calc">
     <div class="r"><span>Importe</span><b>${eur2(imp)}</b></div>
-    ${g.factura?`<div class="r"><span>IVA deducible <small>${g.deduc<100?g.deduc+' % de afectación':Math.round(IVA_P*100)+' %'}</small></span><b>${eur2(imp*IVA_P*g.deduc/100)}</b></div>`
+    ${esCasa(g)?`<div class="r"><span>Gasto de casa <small>no entra en impuestos</small></span><b>—</b></div>`
+      :g.factura?`<div class="r"><span>IVA deducible <small>${g.deduc<100?g.deduc+' % de afectación':Math.round(IVA_P*100)+' %'}</small></span><b>${eur2(imp*IVA_P*g.deduc/100)}</b></div>`
       :`<div class="r"><span>IVA deducible <small>sin factura, no se puede deducir</small></span><b>—</b></div>`}
     ${g.repite?`<div class="r tot"><span>Impacto anual</span><b>${eur2(imp*(g.period==='mensual'?12:g.period==='trimestral'?4:1))}</b></div>`
       :g.amort?`<div class="r tot"><span>Cuota mensual</span><b>${eur2(cuota)}</b></div>`
@@ -1258,12 +1300,17 @@ function pintarGasto(){
     leerGasto();const c=b.dataset.c;editando.cat=c;
     const p=CATS[c].pre;
     if(!editando.concepto&&p.concepto)editando.concepto=p.concepto;
-    editando.factura=p.factura;editando.deduc=p.deduc;
+    editando.factura=p.factura;editando.deduc=p.deduc;editando.ambito=p.ambito||'negocio';
     editando.repite=p.repite;if(p.period)editando.period=p.period;
     pintarGasto();
   });
   swRep.onclick=()=>{leerGasto();editando.repite=editando.repite?0:1;if(editando.repite)editando.amort=0;pintarGasto()};
-  gFac.onclick=()=>{leerGasto();editando.factura=editando.factura?0:1;pintarGasto()};
+  const gf=document.getElementById('gFac');
+  if(gf)gf.onclick=()=>{leerGasto();editando.factura=editando.factura?0:1;pintarGasto()};
+  gAmb.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerGasto();editando.ambito=b.dataset.a;
+    if(b.dataset.a==='casa'){editando.factura=0;if(editando.cat!=='Casa')editando.cat='Casa'}
+    else if(editando.cat==='Casa'){editando.cat='Otros'}
+    pintarGasto()});
   const sd=document.getElementById('swDed');
   if(sd)sd.onclick=()=>{leerGasto();editando.deduc=editando.deduc>=100?50:100;pintarGasto()};
   const sa=document.getElementById('swAmo');
@@ -1290,29 +1337,32 @@ function leerGasto(){
    de cada trabajo y Finanzas no den números distintos.
    ══════════════════════════════════════════════════════════ */
 function impuestosDe(rango){
-  const evs=trabajos().filter(e=>enRango(e,rango)&&+e.importe>0);
+  const evs=trabajos().filter(e=>enRango(e,rango)&&esIngreso(e));
   const fact=evs.filter(e=>e.factura);
   const baseF=fact.reduce((s,e)=>s+(+e.importe||0),0);
   const gpr=gastosPeriodo(rango);
 
   const ivaRep=baseF*IVA_P;
-  const ivaSop=gpr.filter(g=>g.factura).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0)*IVA_P;
+  const ivaSop=gpr.filter(g=>g.factura&&!esCasa(g)).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0)*IVA_P;
   const ivaPagar=ivaRep-ivaSop;
 
   const gastoDed=gpr.filter(dedIrpf).reduce((s,g)=>s+g.mOcc*(g.deduc/100),0);
   const rendim=baseF-gastoDed;
-  const retenido=fact.filter(e=>cliDe(e.cliente)?.tipo==='empresa')
-    .reduce((s,e)=>s+e.importe*IRPF_P,0);
+  const retenido=fact.filter(e=>retiene(cliDe(e.cliente)))
+    .reduce((s,e)=>s+(+e.importe||0)*IRPF_P,0);
   const irpfEst=Math.max(0,rendim)*IRPF_EST;
   const irpfFalta=Math.max(0,irpfEst-retenido);
 
   // el modelo 130 tiene su propio tipo legal: 20 % del rendimiento
   const m130=Math.max(0,rendim*.20-retenido);
-  const conRet=fact.filter(e=>cliDe(e.cliente)?.tipo==='empresa')
-    .reduce((s,e)=>s+e.importe,0);
+  const conRet=fact.filter(e=>retiene(cliDe(e.cliente)))
+    .reduce((s,e)=>s+(+e.importe||0),0);
   const pctRet=baseF?conRet/baseF:0;
 
-  return {baseF,ivaRep,ivaSop,ivaPagar,gastoDed,rendim,retenido,irpfEst,irpfFalta,
+  const baseN=evs.filter(e=>!e.factura).reduce((s,e)=>s+(+e.importe||0),0);
+  // lo que entra al banco: base + IVA que cobrás − lo que te retienen
+  const entra=baseF+ivaRep-retenido+baseN;
+  return {baseF,baseN,entra,ivaRep,ivaSop,ivaPagar,gastoDed,rendim,retenido,irpfEst,irpfFalta,
           m130,pctRet,exento130:pctRet>=0.7,
           apartar:Math.max(0,ivaPagar)+irpfFalta};
 }
@@ -1322,37 +1372,63 @@ function trimestreDe(d){
 }
 
 /* ── finanzas ── */
+const VENCE=['20 de abril','20 de julio','20 de octubre','30 de enero'];
+/* Lo que de verdad entró al banco en el período: solo los trabajos cobrados,
+   contados el día que te pagaron. Con factura entra la base + IVA menos la
+   retención; sin factura entra el importe tal cual. */
+function cobradoDe(rr){
+  return trabajos().filter(e=>esIngreso(e)&&cobradoEn(e,rr)).reduce((s,e)=>{
+    const i=+e.importe||0;
+    if(!e.factura) return s+i;
+    return s + i + i*IVA_P - (retiene(cliDe(e.cliente)) ? i*IRPF_P : 0);
+  },0);
+}
+/* El resultado de un período: lo cobrado − impuestos − gastos.
+   Los impuestos van por fecha de factura (así los pide Hacienda) y la plata
+   por fecha de cobro, que es lo que el banco muestra de verdad. */
+function resultadoDe(rr){
+  const im=impuestosDe(rr), gp=gastosPeriodo(rr);
+  const gas=gp.reduce((s,g)=>s+gReal(g),0);
+  const impMes=Math.max(0,im.ivaPagar)+im.irpfFalta;
+  const cobrado=cobradoDe(rr);
+  return {im,gp,gas,impMes,cobrado,res:cobrado-impMes-gas};
+}
 function renderFin(){
-  const r=rango(),evs=trabajos().filter(e=>enRango(e,r)),conImp=evs.filter(e=>+e.importe>0);
+  const r=rango(),evs=trabajos().filter(e=>enRango(e,r)),conImp=evs.filter(esIngreso);
   const fact=conImp.filter(e=>e.factura),noFact=conImp.filter(e=>!e.factura);
-  // los impuestos se calculan sobre lo facturado, cobrado o no
-  const baseF=fact.reduce((s,e)=>s+e.importe,0),baseN=noFact.reduce((s,e)=>s+e.importe,0);
-  // pero el dinero que "entró" es solo el que está marcado como cobrado
-  const cobrados=conImp.filter(e=>e.estado==='cobrado');
-  const totalIng=cobrados.reduce((s,e)=>s+e.importe,0);
-  const porCobrar=conImp.filter(e=>e.estado!=='cobrado').reduce((s,e)=>s+e.importe,0);
+  const baseF=fact.reduce((s,e)=>s+(+e.importe||0),0),baseN=noFact.reduce((s,e)=>s+(+e.importe||0),0);
+  // la plata que entró en el período: por fecha de cobro
+  const cobrados=trabajos().filter(e=>esIngreso(e)&&cobradoEn(e,r));
+  const totalIng=cobrados.reduce((s,e)=>s+(+e.importe||0),0);
+  // lo que falta cobrar: todo lo pendiente, de cualquier fecha hasta el fin del período
+  const pendientes=trabajos().filter(e=>esIngreso(e)&&e.estado!=='cobrado'&&fromIso(e.fecha)<=r.b);
+  const porCobrar=pendientes.reduce((s,e)=>s+(+e.importe||0),0);
 
-  // deudas: no dependen del período, son un saldo abierto
   const totalDeuda=(deudas||[]).filter(d=>!d.pagada).reduce((s,d)=>s+(+d.monto||0),0);
-  // ahorro acumulado: todo lo que entró menos todo lo que salió, hasta el fin del período
-  const hastaHoy={a:new Date(1970,0,1),b:r.b};
-  const ingAcum=trabajos().filter(e=>fromIso(e.fecha)<=r.b&&+e.importe>0)
-    .reduce((s,e)=>s+(+e.importe||0),0);
-  const gasAcum=gastosPeriodo(hastaHoy).reduce((s,g)=>s+g.mOcc,0);
-  const ahorroAcum=ingAcum-gasAcum;
 
-  const gp=gastosPeriodo(r);
+  const R=resultadoDe(r), imp=R.im, gp=R.gp;
   const gFijos=gp.filter(g=>g.tipo==='fijo'),gVars=gp.filter(g=>g.tipo==='variable'),gTrab=gp.filter(g=>g.tipo==='trabajo');
-  const sumG=a=>a.reduce((s,g)=>s+g.mOcc,0);
-  const totalG=sumG(gp), quedo=totalIng-totalG;
+  const sumG=a=>a.reduce((s,g)=>s+gReal(g),0);
+  const totalG=R.gas, gCasa=sumG(gp.filter(esCasa)), gNeg=totalG-gCasa;
+  const impMes=R.impMes, quedo=R.res;
+  const ivaGastos=gp.reduce((s,g)=>s+gReal(g)-g.mOcc,0);
 
-  const imp=impuestosDe(r);
+  // trimestre en curso (el del período que estás mirando) y su vencimiento
   const tri=trimestreDe(pRef);
   const impT=impuestosDe(tri);
+  const triApartar=Math.max(0,impT.ivaPagar)+impT.irpfFalta;
+  const vence=VENCE[tri.n-1]+(tri.n===4?' de '+(tri.y+1):'');
+
+  // ahorro acumulado: suma del resultado de cada mes, desde el primer mes con datos
+  const fechas=[...trabajos().filter(esIngreso).map(e=>e.fecha),...gastos.map(g=>g.fecha)].filter(Boolean).sort();
+  let ahorroAcum=0;
+  if(fechas.length){const c=fromIso(fechas[0]);c.setDate(1);
+    while(c<=r.b){const rr={a:new Date(c.getFullYear(),c.getMonth(),1),b:new Date(c.getFullYear(),c.getMonth()+1,0)};
+      ahorroAcum+=resultadoDe(rr).res;c.setMonth(c.getMonth()+1)}}
 
   const porCobro={};Object.keys(COBROS).forEach(k=>porCobro[k]=0);
   let sinVia=0;
-  cobrados.forEach(e=>{if(e.cobro)porCobro[e.cobro]+=e.importe;else sinVia+=e.importe});
+  cobrados.forEach(e=>{if(e.cobro)porCobro[e.cobro]+=(+e.importe||0);else sinVia+=(+e.importe||0)});
   const maxC=Math.max(...Object.values(porCobro),sinVia,1);
 
   const bars=[];
@@ -1360,9 +1436,9 @@ function renderFin(){
     const d=new Date(pRef);
     if(modo==='mes')d.setMonth(d.getMonth()-i);else if(modo==='trim')d.setMonth(d.getMonth()-i*3);else d.setFullYear(d.getFullYear()-i);
     const sv=pRef;pRef=d;const rr=rango();pRef=sv;
-    const ev=trabajos().filter(e=>enRango(e,rr)&&+e.importe>0&&e.estado==='cobrado');
+    const ev=trabajos().filter(e=>esIngreso(e)&&cobradoEn(e,rr));
     bars.push({l:rr.corto.slice(0,modo==='mes'?3:5),
-      ing:ev.reduce((s,e)=>s+e.importe,0), gas:sumG(gastosPeriodo(rr)), act:i===0});
+      ing:ev.reduce((s,e)=>s+(+e.importe||0),0), gas:sumG(gastosPeriodo(rr)), act:i===0});
   }
   const maxB=Math.max(...bars.map(b=>Math.max(b.ing,b.gas)),1);
   const hayDatos=bars.some(b=>b.ing>0||b.gas>0);
@@ -1373,15 +1449,16 @@ function renderFin(){
     while(cur<=r.b){
       const yy=cur.getFullYear(),mm=cur.getMonth();
       const rr={a:new Date(yy,mm,1),b:new Date(yy,mm+1,0)};
-      const ev=trabajos().filter(e=>enRango(e,rr)&&+e.importe>0&&e.estado==='cobrado');
-      ms.push({n:MESES[mm],ing:ev.reduce((s,e)=>s+e.importe,0),gas:sumG(gastosPeriodo(rr))});
+      const x=resultadoDe(rr);
+      ms.push({n:MESES[mm],ent:x.cobrado,imp:x.impMes,gas:x.gas,res:x.res});
       cur.setMonth(cur.getMonth()+1);
     }
     desg=`<div class="rows">
-      ${ms.map(m=>`<div class="r"><span style="flex:1;text-transform:capitalize">${m.n}<small>${eur(m.ing)} entró · ${eur(m.gas)} salió</small></span>
-      <b style="color:${m.ing-m.gas>=0?'var(--c-cobra)':'var(--neg)'}">${eur(m.ing-m.gas)}</b></div>`).join('')}
+      ${ms.map(m=>`<div class="r"><span style="flex:1;text-transform:capitalize">${m.n}<small>${eur(m.ent)} cobrado · ${eur(m.imp)} impuestos · ${eur(m.gas)} gastos</small></span>
+      <b style="color:${m.res>=0?'var(--c-cobra)':'var(--neg)'}">${eur(m.res)}</b></div>`).join('')}
     </div>`;
   }
+  const esMes=modo==='mes';
 
   fin.innerHTML=`
   <div class="sec periodo">
@@ -1396,9 +1473,14 @@ function renderFin(){
   <div class="fin-top">
   <div class="sec hero" style="margin-top:16px">
     <div class="hero-num">
-      <div class="lbl">Te quedó</div>
+      <div class="lbl">Te queda ${esMes?'este mes':'en el período'}, ya sin impuestos</div>
       <div class="big" style="color:${quedo>=0?'var(--ink)':'var(--neg)'}">${Math.round(quedo).toLocaleString('es-ES')}<small>€</small></div>
-      <div class="sub">${eur(totalIng)} cobrado · ${eur(totalG)} salió${porCobrar?` · <span style="color:var(--c-confi)">${eur(porCobrar)} por cobrar</span>`:''}</div>
+      <div class="sub">${eur(R.cobrado)} cobrado · ${eur(impMes)} impuestos · ${eur(totalG)} gastos</div>
+    </div>
+    <div class="impbox">
+      <div class="k">Separá para Hacienda</div>
+      <div class="ib-fila"><span>${esMes?'Impuestos de '+r.corto:'Impuestos del período'}<small>IVA ${eur(Math.max(0,imp.ivaPagar))} · IRPF ${eur(imp.irpfFalta)}</small></span><b>${eur(impMes)}</b></div>
+      <div class="ib-fila tot"><span>${tri.n}º trimestre ${tri.y}, acumulado<small>se paga hasta el ${vence}</small></span><b>${eur(triApartar)}</b></div>
     </div>
     <div class="duo trio">
       <button class="box add" id="addIngreso"><span class="k"><i style="background:var(--c-cobra)"></i>Cobrado<span class="plus">+</span></span><span class="v">${eur(totalIng)}</span></button>
@@ -1415,7 +1497,7 @@ function renderFin(){
         <i style="display:block;width:9px;height:${Math.max(2,b.gas/maxB*BARH)}px;background:var(--neg);border-radius:1px"></i>
       </div></div>`).join('')}</div>
     <div class="blbls">${bars.map(b=>`<div>${b.l}</div>`).join('')}</div>
-    <div class="leg"><span><i style="background:var(--c-cobra)"></i>Ingresos</span><span><i style="background:var(--neg)"></i>Gastos</span></div>`
+    <div class="leg"><span><i style="background:var(--c-cobra)"></i>Cobrado</span><span><i style="background:var(--neg)"></i>Gastos</span></div>`
     :`<div class="sinDatos">Todavía no hay movimientos para comparar.</div>`}
   </div>
   </div>
@@ -1430,6 +1512,8 @@ function renderFin(){
         <button class="r tap" data-fg="fijos"><span style="flex:1">Gastos fijos<small>${gFijos.length} conceptos, se cargan solos</small></span><b>${eur(sumG(gFijos))}</b></button>
         <button class="r tap" data-fg="vars"><span style="flex:1">Gastos variables<small>compras y gastos puntuales</small></span><b>${eur(sumG(gVars))}</b></button>
         <button class="r tap" data-fg="trab"><span style="flex:1">Gastos de trabajos<small>asistentes, alquileres, equipo extra</small></span><b>${eur(sumG(gTrab))}</b></button>
+        <div class="r"><span>De casa<small>no bajan impuestos</small></span><b>${eur(gCasa)}</b></div>
+        <div class="r"><span>Del negocio<small>con su IVA, si tienen factura</small></span><b>${eur(gNeg)}</b></div>
         <div class="r tot"><span>Total</span><b>${eur(totalG)}</b></div>
       </div>
     </div>
@@ -1437,37 +1521,34 @@ function renderFin(){
 
   <div class="acc ${abierto.impuestos?'on':''}">
     <button class="acc-h" data-acc="impuestos">
-      <span class="t">Impuestos</span><span class="v">${eur2(imp.apartar)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <span class="t">Impuestos</span><span class="v">${eur2(impMes)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <div class="acc-b">
       <div class="rows">
         <div class="r"><span>Base facturada</span><b>${eur2(imp.baseF)}</b></div>
         <div class="r"><span>IVA repercutido <small>${Math.round(IVA_P*100)} % de lo facturado</small></span><b>${eur2(imp.ivaRep)}</b></div>
-        <div class="r"><span>IVA soportado <small>gastos con factura</small></span><b>−${eur2(imp.ivaSop)}</b></div>
-        <div class="r tot"><span>${imp.ivaPagar>=0?'IVA a pagar':'IVA a devolver'}</span><b>${eur2(Math.abs(imp.ivaPagar))}</b></div></div>
+        <div class="r"><span>IVA soportado <small>gastos del negocio con factura</small></span><b>−${eur2(imp.ivaSop)}</b></div>
+        <div class="r tot"><span>${imp.ivaPagar>=0?'IVA a pagar':'IVA a devolver'} <small>modelo 303</small></span><b>${eur2(Math.abs(imp.ivaPagar))}</b></div></div>
       <div class="rows" style="margin-top:9px">
-        <div class="r"><span>Gastos deducibles</span><b>${eur2(imp.gastoDed)}</b></div>
-        <div class="r"><span>Rendimiento neto <small>lo facturado menos los gastos</small></span><b>${eur2(imp.rendim)}</b></div>
+        <div class="r"><span>Gastos deducibles <small>solo del negocio, cuota de autónomo incluida</small></span><b>${eur2(imp.gastoDed)}</b></div>
+        <div class="r"><span>Rendimiento neto <small>lo facturado menos esos gastos</small></span><b>${eur2(imp.rendim)}</b></div>
         <div class="r"><span>IRPF estimado <small>${Math.round(IRPF_EST*100)} % del rendimiento</small></span><b>${eur2(imp.irpfEst)}</b></div>
-        <div class="r"><span>Ya retenido en facturas <small>${Math.round(IRPF_P*100)} % a clientes empresa</small></span><b>−${eur2(imp.retenido)}</b></div>
-        <div class="r tot"><span>IRPF que falta apartar</span><b>${eur2(imp.irpfFalta)}</b></div></div>
+        <div class="r"><span>Ya retenido en facturas <small>${imp.retenido?Math.round(IRPF_P*100)+' % de los clientes que retienen':'ningún cliente te retuvo'}</small></span><b>−${eur2(imp.retenido)}</b></div>
+        <div class="r tot"><span>IRPF a apartar <small>modelo 130</small></span><b>${eur2(imp.irpfFalta)}</b></div></div>
       <div class="rows" style="margin-top:9px">
-        <div class="r tot"><span>Total a apartar<small>${r.lbl}</small></span><b>${eur2(imp.apartar)}</b></div></div>
-      ${modo!=='trim'?`<div class="note">Los modelos 303 y 130 se presentan por trimestre. En el ${tri.n}º trimestre de ${tri.y} llevás <b>${eur2(impT.apartar)}</b> para apartar.</div>`:''}
-      ${impT.exento130
-        ? `<div class="note">El ${Math.round(impT.pctRet*100)} % de lo que facturaste en el trimestre lleva retención. Como pasa el 70 %, no te toca presentar el modelo 130.</div>`
-        : `<div class="note">Modelo 130 del trimestre: ${eur2(impT.m130)}. Se calcula con el 20 % legal, no con tu IRPF estimado.</div>`}
-      ${baseN?`<div class="note">Estos números salen solo de lo facturado. Los ${eur(baseN)} sin factura quedan fuera y aparecen aparte, arriba.</div>`:''}
+        <div class="r tot"><span>Impuestos ${esMes?'del mes':'del período'}<small>${r.lbl}</small></span><b>${eur2(impMes)}</b></div></div>
+      <div class="note">IVA e IRPF se pagan por trimestre. En el ${tri.n}º trimestre de ${tri.y} llevás <b>${eur2(triApartar)}</b>, a pagar hasta el ${vence}. La cuota de autónomo no está acá: va en gastos fijos, porque se paga todos los meses.</div>
+      ${baseN?`<div class="note">Hay ${eur(baseN)} cobrados sin factura: no entran en el cálculo de impuestos.</div>`:''}
     </div>
   </div>
 
   <div class="acc ${abierto.cobros?'on':''}">
     <button class="acc-h" data-acc="cobros">
-      <span class="t">Me pagaron</span><span class="v">${eur(Object.values(porCobro).reduce((a,b)=>a+b,0)+sinVia)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <span class="t">Me pagaron</span><span class="v">${eur(totalIng)}</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <div class="acc-b">
       <div class="rows">${Object.entries(COBROS).map(([k,v])=>`<div class="r"><span style="flex:1">${v.lbl}
         <i class="bar" style="width:${Math.max(3,porCobro[k]/maxC*100)}%;background:${v.hex};opacity:.5"></i></span><b>${eur(porCobro[k])}</b></div>`).join('')}
         ${sinVia?`<div class="r"><span style="flex:1">Sin especificar<small>cobrados sin forma de pago marcada</small></span><b>${eur(sinVia)}</b></div>`:''}
-        <div class="r tot"><span>Total cobrado</span><b>${eur(Object.values(porCobro).reduce((a,b)=>a+b,0)+sinVia)}</b></div></div>
+        <div class="r tot"><span>Total cobrado<small>por la fecha en que te pagaron</small></span><b>${eur(totalIng)}</b></div></div>
     </div>
   </div>
 
@@ -1481,20 +1562,24 @@ function renderFin(){
 
   <div class="acc detalle ${abierto.detalle?'on':''}">
     <button class="acc-h" data-acc="detalle">
-      <span class="t">Planilla</span><span class="v">${conImp.length} trabajos</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <span class="t">Planilla ${esMes?'del mes':''}</span><span class="v">${eur(quedo)} de ahorro</span><svg class="cv" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5 11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <div class="acc-b">
       <div class="hojas">
 
         <div class="hoja">
-          <div class="hfila hcab"><div class="hc">Gastos</div><div class="hc num"></div></div>
-          ${gp.map(x=>`<div class="hfila">
+          <div class="hfila hcab tres"><div class="hc rojo">Gastos</div><div class="hc num rojo"></div><div class="hc rojo"></div></div>
+          ${gp.map(x=>`<div class="hfila tres">
             ${x.tipo==='trabajo'
-              ? `<div class="hc vacia">${x.concepto} · ${x.trabajo}</div><div class="hc num vacia">${Math.round(x.mOcc)}</div>`
+              ? `<div class="hc vacia">${x.concepto} · ${x.trabajo}</div><div class="hc num vacia">${Math.round(x.mOcc)}</div><div class="hc vacia">Trabajo</div>`
               : `<input class="hc" value="${(x.concepto||'').replace(/"/g,'&quot;')}" data-ed="gasto" data-id="${x.id}" data-campo="concepto">
-                 <input class="hc num" type="number" inputmode="decimal" value="${Math.round(x.mOcc)}" data-ed="gasto" data-id="${x.id}" data-campo="importe"${x.repite||x.esAmort?' readonly title="Se repite todos los meses: se edita desde la lista de gastos"':''}>`}
+                 <input class="hc num" type="number" inputmode="decimal" value="${Math.round(x.mOcc)}" data-ed="gasto" data-id="${x.id}" data-campo="importe"${x.esAmort?' readonly':''}>
+                 <select class="hc" data-ed="gasto" data-id="${x.id}" data-campo="ambito" style="color:${esCasa(x)?'#B07A8C':'#5E90C4'}">
+                   <option value="casa"${esCasa(x)?' selected':''}>Casa</option><option value="negocio"${!esCasa(x)?' selected':''}>Negocio</option></select>`}
           </div>`).join('')}
           <button class="hadd" data-add="gasto">+</button>
-          <div class="hfila htot"><div class="hc">Total gastos mes</div><div class="hc num">${Math.round(totalG)}</div></div>
+          ${ivaGastos>0.5?`<div class="hfila tres"><div class="hc vacia">IVA de gastos con factura</div><div class="hc num vacia">${Math.round(ivaGastos)}</div><div class="hc vacia"></div></div>`:''}
+          <div class="hfila htot tres"><div class="hc">Total gastos mes</div><div class="hc num">${Math.round(totalG)}</div><div class="hc"></div></div>
+          <div class="hfila himp tres"><div class="hc">Impuestos del mes<small> IVA ${Math.round(Math.max(0,imp.ivaPagar))} · IRPF ${Math.round(imp.irpfFalta)}</small></div><div class="hc num">${Math.round(impMes)}</div><div class="hc"></div></div>
         </div>
 
         <div class="hoja">
@@ -1510,7 +1595,7 @@ function renderFin(){
       </div>
 
       <div class="hoja hoja-ancha" style="margin-top:14px">
-        <div class="hfila hcab tres"><div class="hc">Ingresos</div><div class="hc num"></div><div class="hc">Estado</div></div>
+        <div class="hfila hcab tres"><div class="hc verde">Ingresos</div><div class="hc num verde"></div><div class="hc verde">Estado</div></div>
         ${[...conImp].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>`<div class="hfila tres">
           <input class="hc" value="${(e.titulo||'').replace(/"/g,'&quot;')}" data-ed="ev" data-id="${e.id}" data-campo="titulo">
           <input class="hc num" type="number" inputmode="decimal" value="${Math.round(+e.importe||0)}" data-ed="ev" data-id="${e.id}" data-campo="importe">
@@ -1519,10 +1604,20 @@ function renderFin(){
           </select>
         </div>`).join('')}
         <button class="hadd" data-add="ev">+</button>
-        <div class="hfila htot"><div class="hc">Total ingresos</div><div class="hc num">${Math.round(baseF+baseN)}</div></div>
-        <div class="hfila htot"><div class="hc">Total ya cobrado (real)</div><div class="hc num">${Math.round(totalIng)}</div></div>
-        <div class="hfila htot"><div class="hc">Total pendiente de cobro</div><div class="hc num">${Math.round(porCobrar)}</div></div>
-        <div class="hfila htot"><div class="hc">Ahorro mes</div><div class="hc num">${Math.round(baseF+baseN-totalG)}</div></div>
+        <div class="hfila htot"><div class="hc">Total ingresos <small>sin IVA</small></div><div class="hc num">${Math.round(baseF+baseN)}</div></div>
+        ${imp.ivaRep?`<div class="hfila"><div class="hc vacia">+ IVA que le cobrás al cliente</div><div class="hc num vacia">${Math.round(imp.ivaRep)}</div></div>`:''}
+        ${imp.retenido?`<div class="hfila"><div class="hc vacia">− Retenciones de IRPF</div><div class="hc num vacia">−${Math.round(imp.retenido)}</div></div>`:''}
+        <div class="hfila htot"><div class="hc">Entra al banco <small>si cobrás todo</small></div><div class="hc num">${Math.round(imp.entra)}</div></div>
+        <div class="hfila"><div class="hc vacia">Ya cobrado en el mes (real)</div><div class="hc num vacia">${Math.round(totalIng)}</div></div>
+        <div class="hfila"><div class="hc vacia">Pendiente de cobro, total</div><div class="hc num vacia">${Math.round(porCobrar)}</div></div>
+      </div>
+
+      <div class="hoja hoja-ancha" style="margin-top:14px">
+        <div class="hfila hcab"><div class="hc">Cómo estoy</div><div class="hc num"></div></div>
+        <div class="hfila"><div class="hc">Cobrado de verdad</div><div class="hc num">${Math.round(R.cobrado)}</div></div>
+        <div class="hfila"><div class="hc">− Impuestos del mes</div><div class="hc num">−${Math.round(impMes)}</div></div>
+        <div class="hfila"><div class="hc">− Gastos del mes</div><div class="hc num">−${Math.round(totalG)}</div></div>
+        <div class="hfila htot"><div class="hc">Ahorro mes</div><div class="hc num" style="color:${quedo>=0?'var(--c-cobra)':'var(--neg)'}">${Math.round(quedo)}</div></div>
         <div class="hfila htot"><div class="hc">Total de ahorros</div><div class="hc num">${Math.round(ahorroAcum)}</div></div>
       </div>
     </div>
@@ -1532,7 +1627,6 @@ function renderFin(){
 
   segp.querySelectorAll('button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;renderFin()});
   pPrev.onclick=()=>moverP(-1);pNext.onclick=()=>moverP(1);
-  // cargar de una, sin pasar por el calendario ni por la lista
   addIngreso.onclick=()=>{editando=null;abrirEvento(null,'trabajo')};
   addGasto.onclick=()=>{editando=null;editarGasto(null,true)};
   fin.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>{
@@ -1545,9 +1639,12 @@ function renderFin(){
       const t=el.dataset.ed, id=el.dataset.id, campo=el.dataset.campo;
       let val=el.value;
       if(campo==='importe'||campo==='monto')val=+val||0;
-      if(t==='ev'){const e=eventos.find(x=>String(x.id)===id); if(e)await persistirEvento({...e,[campo]:val})}
+      if(t==='ev'){const e=eventos.find(x=>String(x.id)===id); if(e)await persistirEvento(campo==='estado'?conEstado(e,val):{...e,[campo]:val})}
       if(t==='deuda'){const d=deudas.find(x=>String(x.id)===id); if(d)await persistirDeuda({...d,[campo]:val})}
-      if(t==='gasto'){const g=gastos.find(x=>String(x.id)===id); if(g)await persistirGasto({...g,[campo]:val})}
+      if(t==='gasto'){const g=gastos.find(x=>String(x.id)===id); if(!g)return;
+        const o={...g,[campo]:val};
+        if(campo==='ambito'){o.cat=val==='casa'?'Casa':(g.cat==='Casa'?'Otros':g.cat);if(val==='casa')o.factura=0}
+        await persistirGasto(o)}
     };
   });
   fin.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
@@ -1610,7 +1707,7 @@ function abrirEvento(ev,tipo){
 }
 function pintarEvento(){
   const e=editando, esNota=e.tipo==='nota';
-  const imp=+e.importe||0, esEmp=cliDe(e.cliente)?.tipo==='empresa';
+  const imp=+e.importe||0, esEmp=retiene(cliDe(e.cliente));
   const iva=e.factura?imp*IVA_P:0, irpf=(e.factura&&esEmp)?imp*IRPF_P:0, g=gTot(e);
   // cuánto hay que apartar de verdad para Hacienda
   const gIvaJob=e.factura?gIva(e):0;
@@ -1637,7 +1734,7 @@ function pintarEvento(){
   <div class="calc">
     <div class="r"><span>Tu tarifa</span><b>${eur2(imp)}</b></div>
     ${e.factura?`<div class="r"><span>IVA ${Math.round(IVA_P*100)} % <small>no es tuyo: se lo devolvés a Hacienda</small></span><b>+ ${eur2(iva)}</b></div>
-    <div class="r"><span>Retención ${Math.round(IRPF_P*100)} % <small>${esEmp?'adelanto de tu IRPF, te lo descuentan en la renta':'no aplica a particular'}</small></span><b>${irpf?'− '+eur2(irpf):'—'}</b></div>
+    <div class="r"><span>Retención ${Math.round(IRPF_P*100)} % <small>adelanto de tu IRPF, te lo descuentan en la renta</small></span><b>${irpf?'− '+eur2(irpf):'—'}</b></div>
     <div class="r tot"><span>Entra al banco</span><b>${eur2(imp+iva-irpf)}</b></div>`
     :`<div class="r"><span>Sin factura <small>no entra en el cálculo de impuestos</small></span><b>—</b></div>
     <div class="r tot"><span>Entra al banco</span><b>${eur2(imp)}</b></div>`}
@@ -1716,7 +1813,7 @@ function pintarEvento(){
   if(fF)fF.onchange=()=>{leerEv();pintarEvento()};
 
   if(!esNota){
-    seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();editando.estado=b.dataset.e;pintarEvento()});
+    seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();Object.assign(editando,conEstado(editando,b.dataset.e));pintarEvento()});
     segc.querySelectorAll('button').forEach(b=>b.onclick=()=>{leerEv();
       editando.cobro=editando.cobro===b.dataset.c?'':b.dataset.c;
       if(editando.cobro==='efectivo')editando.factura=0;pintarEvento()});
@@ -1795,13 +1892,13 @@ function vistaAjustes(){
     </div>
   </div>
   <button class="verhist" id="salir" style="margin-top:20px">Cerrar sesión</button>
-  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v45 · 25 sept</div>`;
+  <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:22px">v47 · 13 nov</div>`;
   const ci=document.getElementById('cfgIva');
-  if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;vistaAjustes();render()};
+  if(ci)ci.onchange=()=>{IVA_P=+ci.value/100;guardarAjustes();vistaAjustes();render()};
   const ce=document.getElementById('cfgEst');
-  if(ce)ce.onchange=()=>{IRPF_EST=+ce.value/100;vistaAjustes();render()};
+  if(ce)ce.onchange=()=>{IRPF_EST=+ce.value/100;guardarAjustes();vistaAjustes();render()};
   const cr=document.getElementById('cfgRet');
-  if(cr)cr.onchange=()=>{IRPF_P=+cr.value/100;vistaAjustes();render()};
+  if(cr)cr.onchange=()=>{IRPF_P=+cr.value/100;guardarAjustes();vistaAjustes();render()};
   temaSel.querySelectorAll('button').forEach(b=>b.onclick=()=>{aplicarTema(b.dataset.t);vistaAjustes();render()});
   abrir();
 }
@@ -1861,7 +1958,7 @@ menu.onclick=async e=>{
     return;
   }
   if(a.startsWith('est:')){
-    await persistirEvento({...ev,estado:a.slice(4)});
+    await persistirEvento(conEstado(ev,a.slice(4)));
   }
 };
 
